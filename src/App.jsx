@@ -18,6 +18,29 @@ const BUILD_TAG_GROUPS = [
 ];
 const BUILD_TAG_OPTIONS = BUILD_TAG_GROUPS.flatMap((group) => group.options);
 
+const EVIDENCE_MAX_BYTES = 5 * 1024 * 1024;
+const EVIDENCE_MIME_EXTENSION = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/webp": "webp"
+};
+
+function validateEvidenceFile(file) {
+  if (!file) return "";
+  if (!EVIDENCE_MIME_EXTENSION[file.type]) {
+    return "증빙 이미지는 PNG, JPG, WEBP만 업로드할 수 있습니다.";
+  }
+  if (file.size > EVIDENCE_MAX_BYTES) {
+    return "증빙 이미지는 최대 5MB까지 업로드할 수 있습니다.";
+  }
+  return "";
+}
+
+function evidenceSafeExtension(file) {
+  return EVIDENCE_MIME_EXTENSION[file?.type] || null;
+}
+
+
 function normalizeBuildTagSelection(value) {
   const source = Array.isArray(value)
     ? value
@@ -130,6 +153,64 @@ function modifierDropdownLabel(mod) {
   return `[${category}] ${name}${options ? ` — ${options}` : ""}`;
 }
 
+function detectBuildTagSuggestions(slots, modMap) {
+  const selectedMods = Object.values(slots || {})
+    .flatMap((slot) => [slot?.prefix_modbook_id, slot?.suffix_modbook_id])
+    .filter(Boolean)
+    .map((id) => modMap.get(Number(id)) || modMap.get(id))
+    .filter(Boolean);
+
+  const corpus = selectedMods
+    .flatMap((mod) => [
+      mod.name,
+      mod.category,
+      mod.parts,
+      mod.option1,
+      mod.option2,
+      mod.option3,
+      mod.note
+    ])
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase()
+    .replace(/\s+/g, "");
+
+  const suggestions = [];
+
+  if (corpus.includes("무법지대") || corpus.includes("무법")) {
+    suggestions.push("무법지대");
+  }
+
+  if (
+    corpus.includes("체력") ||
+    corpus.includes("생명력") ||
+    corpus.includes("최대체력")
+  ) {
+    suggestions.push("체력");
+  }
+
+  if (
+    corpus.includes("이동속도") ||
+    corpus.includes("이속") ||
+    corpus.includes("movement")
+  ) {
+    suggestions.push("이동속도");
+  }
+
+  for (const lifeTag of LIFE_CATEGORIES) {
+    if (corpus.includes(lifeTag.toLowerCase())) {
+      suggestions.push(lifeTag);
+    }
+  }
+
+  if (LIFE_CATEGORIES.some((tag) => suggestions.includes(tag)) || corpus.includes("생활")) {
+    suggestions.push("생활");
+  }
+
+  return [...new Set(suggestions)]
+    .filter((tag) => BUILD_TAG_OPTIONS.includes(tag));
+}
+
 
 function slotAllows(mod, slot) {
   const parts = String(mod?.parts || "");
@@ -166,18 +247,7 @@ function socialScore(build) {
   return (build?.like_count || 0) - (build?.dislike_count || 0);
 }
 
-function buildSearchText(build) {
-  return [build?.title, build?.summary, build?.description, build?.author_name, build?.author_company, ...visibleTags(build?.tags)]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-}
-
-function buildCategoryList() {
-  return BASE_CATEGORIES;
-}
-
-function buildCategoryCorpus(build, slots, modMap) {
+function buildSearchText(build, slots = [], modMap = new Map()) {
   const modText = (slots || [])
     .flatMap((slot) => [slot?.prefix_modbook_id, slot?.suffix_modbook_id])
     .map((id) => modMap.get(id))
@@ -198,37 +268,33 @@ function buildCategoryCorpus(build, slots, modMap) {
     build?.summary,
     build?.description,
     build?.author_name,
+    build?.author_company,
     ...visibleTags(build?.tags),
     ...modText
   ]
     .filter(Boolean)
     .join(" ")
-    .toLowerCase()
-    .replace(/\s+/g, "");
+    .toLowerCase();
+}
+
+function buildCategoryList() {
+  return BASE_CATEGORIES;
 }
 
 function buildMatchesCategory(build, slots, modMap, primary, lifeSecondary = "전체") {
   if (primary === "전체" || primary === "인기") return true;
 
-  const corpus = buildCategoryCorpus(build, slots, modMap);
+  const tags = new Set(normalizeBuildTagSelection(visibleTags(build?.tags)));
 
-  if (primary === "무법지대") {
-    return corpus.includes("무법지대") || corpus.includes("무법");
-  }
-
-  if (primary === "체력") {
-    return corpus.includes("체력") || corpus.includes("생명력") || corpus.includes("최대체력");
-  }
-
-  if (primary === "이동속도") {
-    return corpus.includes("이동속도") || corpus.includes("이속");
-  }
+  if (primary === "무법지대") return tags.has("무법지대");
+  if (primary === "체력") return tags.has("체력");
+  if (primary === "이동속도") return tags.has("이동속도");
 
   if (primary === "생활") {
-    const hasLifeSub = LIFE_CATEGORIES.some((name) => corpus.includes(name.toLowerCase()));
-    if (!hasLifeSub && !corpus.includes("생활")) return false;
-    if (lifeSecondary === "전체") return true;
-    return corpus.includes(String(lifeSecondary).toLowerCase());
+    if (lifeSecondary === "전체") {
+      return tags.has("생활") || LIFE_CATEGORIES.some((tag) => tags.has(tag));
+    }
+    return tags.has(lifeSecondary);
   }
 
   return false;
@@ -614,7 +680,7 @@ function BuildsPage({
 
   const rows = useMemo(() => {
     let result = builds.filter((build) => {
-      const hay = buildSearchText(build);
+      const hay = buildSearchText(build, buildSlotsMap[build.id] || [], modMap);
       const qOk = hay.includes(query.trim().toLowerCase());
       const categoryOk = buildMatchesCategory(
         build,
@@ -682,7 +748,7 @@ function BuildsPage({
       <div className="toolbar build-toolbar">
         <div className="searchbox">
           <span>⌕</span>
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="세팅명, 태그, 작성자 검색" />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="세팅명, 태그, 작성자, 개조서/옵션 검색" />
           {query && <button onClick={() => setQuery("")}>×</button>}
         </div>
         <select value={sort} onChange={(e) => setSort(e.target.value)}>
@@ -1004,6 +1070,53 @@ function RecruitPosterModal({ onClose }) {
           src="/assets/axe-recruitment-poster.png"
           alt="AXE 신규 인원 모집 포스터"
         />
+      </div>
+    </Modal>
+  );
+}
+
+function LoginPrivacyModal({ onClose, onContinue }) {
+  return (
+    <Modal title="Discord 로그인 안내" onClose={onClose} className="login-privacy-modal-v116">
+      <div className="login-privacy-v116">
+        <div className="login-privacy-v116__lead">
+          <span>MINIMUM ACCESS</span>
+          <strong>로그인에 필요한 최소 권한만 요청합니다.</strong>
+          <p>AXE BUILD는 Discord 계정을 사용자 식별 용도로만 사용합니다.</p>
+        </div>
+
+        <div className="login-privacy-v116__grid">
+          <section>
+            <span>요청하는 권한</span>
+            <strong>Discord 사용자 식별</strong>
+            <p>계정 식별을 위한 <b>identify</b> 권한만 요청합니다.</p>
+          </section>
+          <section>
+            <span>요청하지 않는 정보</span>
+            <strong>이메일 · 비밀번호 · 채팅</strong>
+            <p>서버 채팅, DM, 서버 목록, Discord 비밀번호에 접근하지 않습니다.</p>
+          </section>
+          <section>
+            <span>사이트에 저장되는 내용</span>
+            <strong>직접 작성한 데이터</strong>
+            <p>빌드, 댓글, 닉네임/회사명 신청, 제보 등 사용자가 직접 입력한 내용만 저장합니다.</p>
+          </section>
+          <section>
+            <span>이미지 업로드</span>
+            <strong>직접 선택한 증빙만</strong>
+            <p>제보 시 사용자가 직접 선택한 PNG/JPG/WEBP 이미지에 한해 업로드됩니다.</p>
+          </section>
+        </div>
+
+        <div className="login-privacy-v116__note">
+          <span>보안 안내</span>
+          <p>AXE BUILD는 프로그램 설치나 실행 파일 다운로드를 요구하지 않습니다.</p>
+        </div>
+      </div>
+
+      <div className="modal-actions">
+        <button className="btn ghost" onClick={onClose}>취소</button>
+        <button className="btn discord" onClick={onContinue}>Discord 로그인 계속</button>
       </div>
     </Modal>
   );
@@ -1937,6 +2050,24 @@ function BuildEditor({
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const setField = (k, v) => setForm((prev) => ({ ...prev, [k]: v }));
+
+  const editorModMap = useMemo(
+    () => new Map(modbooks.map((mod) => [Number(mod.id), mod])),
+    [modbooks]
+  );
+
+  const detectedTagSuggestions = useMemo(
+    () => detectBuildTagSuggestions(slots, editorModMap)
+      .filter((tag) => !normalizeBuildTagSelection(form.tags).includes(tag)),
+    [slots, editorModMap, form.tags]
+  );
+
+  const addSuggestedTag = (tag) => {
+    const current = normalizeBuildTagSelection(form.tags);
+    if (current.includes(tag) || current.length >= 8) return;
+    setField("tags", [...current, tag]);
+  };
 
   useEffect(() => {
     if (!isCreate) return;
@@ -1948,7 +2079,6 @@ function BuildEditor({
     return () => window.clearTimeout(timer);
   }, [form, slots, isCreate, draftKey]);
 
-  const setField = (k, v) => setForm((prev) => ({ ...prev, [k]: v }));
   const setSlot = (slotKey, k, v) =>
     setSlots((prev) => ({ ...prev, [slotKey]: { ...prev[slotKey], [k]: v } }));
 
@@ -2077,12 +2207,36 @@ function BuildEditor({
           />
         </label>
         <div className="full build-tag-field-v113">
-          <span>태그</span>
+          <span>태그 · 카테고리 기준</span>
           <BuildTagMultiSelect
             value={form.tags}
             onChange={(tags) => setField("tags", tags)}
           />
-          <small>예: 체력 + 이동속도처럼 목적이 겹치는 세팅은 여러 태그를 동시에 선택하세요.</small>
+          <small>
+            카테고리 노출은 <b>여기서 직접 선택한 태그만</b> 기준으로 합니다.
+            체력 + 이동속도처럼 목적이 겹치면 여러 태그를 함께 선택하세요.
+          </small>
+
+          {detectedTagSuggestions.length > 0 && (
+            <div className="tag-suggestions-v117">
+              <div>
+                <span>선택한 개조서에서 감지</span>
+                <small>자동 분류되지 않습니다. 필요한 태그만 직접 추가하세요.</small>
+              </div>
+              <div className="tag-suggestions-v117__chips">
+                {detectedTagSuggestions.map((tag) => (
+                  <button
+                    type="button"
+                    key={tag}
+                    onClick={() => addSuggestedTag(tag)}
+                  >
+                    <b>+</b>
+                    <span>{tag}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
         <label className="full">
           <span>설명</span>
@@ -2145,7 +2299,7 @@ function BuildEditor({
 
       <div className="editor-standard">
         <strong>작성 기준</strong>
-        <span>AXE HUB에 등록된 개조서 옵션을 사용하며 상세 화면에는 선택한 옵션과 최대값 요약을 함께 표시합니다.</span>
+        <span>카테고리는 작성자가 선택한 태그로만 분류됩니다. 개조서 정보는 검색과 태그 추천에만 사용되며 자동으로 카테고리를 추가하지 않습니다.</span>
       </div>
 
       {error && <div className="form-error">{error}</div>}
@@ -2179,6 +2333,18 @@ function ReportEditor({ user, modbooks, onClose, onSaved }) {
     setForm((prev) => ({ ...prev, [k]: v }));
   }
 
+  function chooseEvidenceFile(nextFile, input) {
+    const validationError = validateEvidenceFile(nextFile);
+    if (validationError) {
+      setFile(null);
+      setError(validationError);
+      if (input) input.value = "";
+      return;
+    }
+    setError("");
+    setFile(nextFile || null);
+  }
+
   function chooseTarget(value) {
     const mod = modbooks.find((m) => String(m.id) === String(value));
     setForm((prev) => ({
@@ -2199,11 +2365,20 @@ function ReportEditor({ user, modbooks, onClose, onSaved }) {
     try {
       let evidence_path = null;
       if (file) {
-        const ext = (file.name.split(".").pop() || "png").toLowerCase();
+        const validationError = validateEvidenceFile(file);
+        if (validationError) throw new Error(validationError);
+
+        const ext = evidenceSafeExtension(file);
+        if (!ext) throw new Error("지원하지 않는 이미지 형식입니다.");
+
         evidence_path = `${user.id}/${crypto.randomUUID()}.${ext}`;
         const { error: uploadError } = await supabase.storage
           .from("modbook-evidence")
-          .upload(evidence_path, file, { upsert: false });
+          .upload(evidence_path, file, {
+            upsert: false,
+            contentType: file.type,
+            cacheControl: "3600"
+          });
         if (uploadError) throw uploadError;
       }
 
@@ -2274,9 +2449,15 @@ function ReportEditor({ user, modbooks, onClose, onSaved }) {
           <span>메모</span>
           <textarea value={form.note} onChange={(e) => set("note", e.target.value)} />
         </label>
-        <label className="full">
+        <label className="full evidence-upload-v116">
           <span>스크린샷 증빙 · 선택</span>
-          <input type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => setFile(e.target.files?.[0] || null)} />
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            onChange={(e) => chooseEvidenceFile(e.target.files?.[0] || null, e.target)}
+          />
+          <small>PNG / JPG / WEBP · 최대 5MB · 직접 선택한 이미지만 업로드됩니다.</small>
+          {file && <em>{file.name} · {(file.size / 1024 / 1024).toFixed(2)}MB</em>}
         </label>
       </div>
       {error && <div className="form-error">{error}</div>}
@@ -2315,6 +2496,7 @@ export default function App() {
   const [reportEditor, setReportEditor] = useState(false);
   const [profileModal, setProfileModal] = useState(false);
   const [recruitModal, setRecruitModal] = useState(false);
+  const [loginPrivacyModal, setLoginPrivacyModal] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState(() => categoryFromLocation());
   const [adminMode, setAdminMode] = useState("nicknames");
   const [toast, setToast] = useState({ message: "", tone: "default" });
@@ -2503,14 +2685,40 @@ export default function App() {
     setAnnouncements(notices || []);
   }
 
-  async function login() {
+  function login() {
+    if (!isSupabaseConfigured) {
+      notify("Supabase 환경변수를 먼저 설정하세요.", "error");
+      return;
+    }
+
+    let acknowledged = false;
+    try {
+      acknowledged = window.localStorage.getItem("axe_login_privacy_ack_v116") === "1";
+    } catch (_) {}
+
+    if (acknowledged) {
+      beginDiscordLogin();
+      return;
+    }
+
+    setLoginPrivacyModal(true);
+  }
+
+  async function beginDiscordLogin() {
     if (!isSupabaseConfigured) return notify("Supabase 환경변수를 먼저 설정하세요.", "error");
+
+    try {
+      window.localStorage.setItem("axe_login_privacy_ack_v116", "1");
+    } catch (_) {}
+
+    setLoginPrivacyModal(false);
+
     const redirectTo = String(import.meta.env.VITE_SITE_URL || window.location.origin).replace(/\/$/, "");
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "discord",
       options: {
         redirectTo,
-        scopes: "identify email"
+        scopes: "identify"
       }
     });
     if (error) notify(error.message, "error");
@@ -2829,6 +3037,13 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`}</pre>
           modbooks={modbooks}
           onClose={() => setReportEditor(false)}
           onSaved={reportFinished}
+        />
+      )}
+
+      {loginPrivacyModal && !user && (
+        <LoginPrivacyModal
+          onClose={() => setLoginPrivacyModal(false)}
+          onContinue={beginDiscordLogin}
         />
       )}
 

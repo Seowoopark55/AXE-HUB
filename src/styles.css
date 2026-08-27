@@ -4717,3 +4717,213 @@ select:focus,input:focus,textarea:focus{border-color:rgba(247,183,51,.65);box-sh
     padding:11px;
   }
 }
+
+
+/* =========================================================
+   AXE BUILD v1.1.16
+   PRIVACY + UPLOAD SAFETY
+   ========================================================= */
+
+.login-privacy-modal-v116{
+  width:min(720px,calc(100vw - 30px))!important;
+}
+.login-privacy-v116{
+  padding:18px 20px 6px;
+}
+.login-privacy-v116__lead{
+  padding:15px 16px;
+  border:1px solid rgba(88,166,255,.18);
+  border-radius:12px;
+  background:linear-gradient(135deg,rgba(88,166,255,.05),transparent 48%),#0d1013;
+}
+.login-privacy-v116__lead>span,
+.login-privacy-v116__note>span{
+  display:block;
+  color:#72b4ff;
+  font-size:8px;
+  font-weight:950;
+  letter-spacing:.13em;
+}
+.login-privacy-v116__lead>strong{
+  display:block;
+  margin-top:5px;
+  color:#eef1f4;
+  font-size:17px;
+  font-weight:950;
+}
+.login-privacy-v116__lead>p{
+  margin:7px 0 0;
+  color:#9299a1;
+  font-size:10.5px;
+  line-height:1.65;
+}
+
+.login-privacy-v116__grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:10px;
+}
+.login-privacy-v116__grid>section{
+  min-height:112px;
+  padding:12px 13px;
+  border:1px solid #282d32;
+  border-radius:11px;
+  background:#0d1013;
+}
+.login-privacy-v116__grid span{
+  color:#737a82;
+  font-size:8px;
+  font-weight:900;
+}
+.login-privacy-v116__grid strong{
+  display:block;
+  margin-top:6px;
+  color:#dfe2e5;
+  font-size:12px;
+  font-weight:950;
+}
+.login-privacy-v116__grid p{
+  margin:7px 0 0;
+  color:#858c94;
+  font-size:9.5px;
+  line-height:1.62;
+}
+.login-privacy-v116__grid b{
+  color:#b9d9ff;
+}
+
+.login-privacy-v116__note{
+  margin-top:10px;
+  padding:10px 12px;
+  border:1px solid rgba(255,181,46,.13);
+  border-radius:10px;
+  background:rgba(255,181,46,.025);
+}
+.login-privacy-v116__note>span{
+  color:#b78b42;
+}
+.login-privacy-v116__note>p{
+  margin:5px 0 0;
+  color:#8f959c;
+  font-size:9.5px;
+  line-height:1.6;
+}
+
+/* Evidence uploads */
+.evidence-upload-v116{
+  display:grid!important;
+  gap:6px!important;
+}
+.evidence-upload-v116>small{
+  color:#6c737b;
+  font-size:8.8px;
+  line-height:1.5;
+}
+.evidence-upload-v116>em{
+  padding:7px 9px;
+  overflow:hidden;
+  border:1px solid rgba(88,166,255,.13);
+  border-radius:8px;
+  color:#8ebdeb;
+  background:rgba(88,166,255,.025);
+  font-size:8.8px;
+  font-style:normal;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+@media(max-width:620px){
+  .login-privacy-v116{
+    padding:14px 14px 4px;
+  }
+  .login-privacy-v116__grid{
+    grid-template-columns:1fr;
+  }
+  .login-privacy-v116__grid>section{
+    min-height:0;
+  }
+}
+
+
+/* =========================================================
+   AXE BUILD v1.1.17
+   EXPLICIT TAG CLASSIFICATION
+   ========================================================= */
+
+.build-tag-field-v113>small b{
+  color:#d7b36d;
+  font-weight:950;
+}
+
+.tag-suggestions-v117{
+  display:grid;
+  gap:9px;
+  margin-top:2px;
+  padding:11px 12px;
+  border:1px solid rgba(88,166,255,.13);
+  border-radius:10px;
+  background:
+    linear-gradient(135deg,rgba(88,166,255,.035),transparent 45%),
+    #0c0f12;
+}
+.tag-suggestions-v117>div:first-child{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:6px 12px;
+}
+.tag-suggestions-v117>div:first-child>span{
+  color:#8fbce8;
+  font-size:9px;
+  font-weight:950;
+}
+.tag-suggestions-v117>div:first-child>small{
+  color:#676e76;
+  font-size:8.5px;
+  line-height:1.5;
+}
+.tag-suggestions-v117__chips{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+.tag-suggestions-v117__chips>button{
+  min-height:29px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:0 9px;
+  border:1px solid rgba(88,166,255,.20);
+  border-radius:999px;
+  color:#b8d6f4;
+  background:rgba(88,166,255,.04);
+  cursor:pointer;
+  transition:.12s ease;
+}
+.tag-suggestions-v117__chips>button:hover{
+  border-color:rgba(255,181,46,.40);
+  color:#efd39b;
+  background:rgba(255,181,46,.055);
+}
+.tag-suggestions-v117__chips b{
+  color:#65adf4;
+  font-size:12px;
+  font-weight:950;
+}
+.tag-suggestions-v117__chips span{
+  font-size:9px;
+  font-weight:900;
+}
+
+.editor-standard{
+  border-color:rgba(255,181,46,.13)!important;
+}
+
+@media(max-width:680px){
+  .tag-suggestions-v117>div:first-child{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+}
