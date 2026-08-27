@@ -1791,6 +1791,7 @@ function BuildDetail({
                 <button className="btn primary" onClick={submitComment} disabled={commentBusy}>
                   {commentBusy ? "등록 중..." : "댓글 등록"}
                 </button>
+                <small className="comment-rate-note-v118">도배 방지 · 1분에 5개까지</small>
               </div>
             ) : (
               <button className="comment-login" onClick={onLogin}>
@@ -2304,6 +2305,13 @@ function BuildEditor({
 
       {error && <div className="form-error">{error}</div>}
 
+      {!isEdit && (
+        <div className="rate-limit-note-v118">
+          <span>도배 방지</span>
+          <p>빌드 게시: 10분에 3개 · 24시간에 15개까지</p>
+        </div>
+      )}
+
       <div className="modal-actions sticky">
         <button className="btn ghost" onClick={onClose}>취소</button>
         <button className="btn primary" onClick={save} disabled={saving}>
@@ -2394,7 +2402,16 @@ function ReportEditor({ user, modbooks, onClose, onSaved }) {
         note: form.note.trim() || null,
         evidence_path
       });
-      if (insertError) throw insertError;
+
+      if (insertError) {
+        if (evidence_path) {
+          try {
+            await supabase.storage.from("modbook-evidence").remove([evidence_path]);
+          } catch {}
+        }
+        throw insertError;
+      }
+
       onSaved();
     } catch (e) {
       setError(e.message || "제보 등록 중 오류가 발생했습니다.");
@@ -2461,6 +2478,10 @@ function ReportEditor({ user, modbooks, onClose, onSaved }) {
         </label>
       </div>
       {error && <div className="form-error">{error}</div>}
+      <div className="rate-limit-note-v118">
+        <span>도배 방지</span>
+        <p>제보 등록: 10분에 3개 · 24시간에 12개까지</p>
+      </div>
       <div className="modal-actions sticky">
         <button className="btn ghost" onClick={onClose}>취소</button>
         <button className="btn primary" onClick={save} disabled={saving}>{saving ? "등록 중..." : "제보 등록"}</button>

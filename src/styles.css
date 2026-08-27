@@ -4927,3 +4927,55 @@ select:focus,input:focus,textarea:focus{border-color:rgba(247,183,51,.65);box-sh
     flex-direction:column;
   }
 }
+
+
+/* =========================================================
+   AXE BUILD v1.1.18
+   ANTI-SPAM UI
+   ========================================================= */
+
+.rate-limit-note-v118{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-top:9px;
+  padding:8px 10px;
+  border:1px solid rgba(255,181,46,.10);
+  border-radius:9px;
+  background:rgba(255,181,46,.02);
+}
+.rate-limit-note-v118>span{
+  flex:0 0 auto;
+  color:#ad8442;
+  font-size:8px;
+  font-weight:950;
+  letter-spacing:.08em;
+}
+.rate-limit-note-v118>p{
+  margin:0;
+  color:#6e747b;
+  font-size:8.8px;
+  line-height:1.5;
+}
+
+.comment-write{
+  grid-template-columns:1fr auto!important;
+}
+.comment-rate-note-v118{
+  grid-column:1/-1;
+  color:#5f666e;
+  font-size:8px;
+  line-height:1.4;
+  text-align:right;
+}
+
+@media(max-width:700px){
+  .rate-limit-note-v118{
+    align-items:flex-start;
+    flex-direction:column;
+    gap:4px;
+  }
+  .comment-rate-note-v118{
+    text-align:left;
+  }
+}
