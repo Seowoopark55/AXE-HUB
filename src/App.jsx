@@ -72,6 +72,20 @@ function visibleTags(tags = []) {
   return (tags || []).filter((tag) => tag && !HIDDEN_TAGS.has(String(tag).trim()));
 }
 
+function displayProfileName(profile, user) {
+  return (
+    profile?.approved_nickname ||
+    profile?.display_name ||
+    user?.user_metadata?.full_name ||
+    user?.user_metadata?.name ||
+    "Discord User"
+  );
+}
+
+function socialScore(build) {
+  return (build?.like_count || 0) - (build?.dislike_count || 0);
+}
+
 function buildSearchText(build) {
   return [build?.title, build?.summary, build?.description, build?.author_name, ...visibleTags(build?.tags)]
     .filter(Boolean)
@@ -172,7 +186,8 @@ function Brand() {
   );
 }
 
-function Header({ tab, setTab, user, profile, onLogin, onLogout, onCreate }) {
+function Header({ tab, setTab, user, profile, onLogin, onLogout, onCreate, onProfile }) {
+  const displayName = displayProfileName(profile, user);
   return (
     <header className="topbar">
       <div className="shell topbar-inner">
@@ -180,100 +195,61 @@ function Header({ tab, setTab, user, profile, onLogin, onLogout, onCreate }) {
           <Brand />
         </button>
         <nav className="nav">
-          <button className={cls(tab === "builds" && "active")} onClick={() => setTab("builds")}>
-            추천세팅
-          </button>
-          <button className={cls(tab === "modbooks" && "active")} onClick={() => setTab("modbooks")}>
-            개조서
-          </button>
-          <button className={cls(tab === "reports" && "active")} onClick={() => setTab("reports")}>
-            제보
-          </button>
-          {profile?.is_admin && (
-            <button className={cls(tab === "admin" && "active")} onClick={() => setTab("admin")}>
-              관리
-            </button>
-          )}
+          <button className={cls(tab === "builds" && "active")} onClick={() => setTab("builds")}>추천세팅</button>
+          {user && <button className={cls(tab === "presets" && "active")} onClick={() => setTab("presets")}>내 프리셋</button>}
+          <button className={cls(tab === "modbooks" && "active")} onClick={() => setTab("modbooks")}>개조서</button>
+          <button className={cls(tab === "reports" && "active")} onClick={() => setTab("reports")}>제보</button>
+          <button className={cls(tab === "notices" && "active")} onClick={() => setTab("notices")}>공지</button>
+          {profile?.is_admin && <button className={cls(tab === "admin" && "active")} onClick={() => setTab("admin")}>관리</button>}
         </nav>
         <div className="header-actions">
-          {user && (
-            <button className="btn ghost compact desktop-only" onClick={onCreate}>
-              + 세팅 작성
-            </button>
-          )}
+          {user && <button className="btn ghost compact desktop-only" onClick={() => setTab("presets")}>★ 내 프리셋</button>}
+          {user && <button className="btn ghost compact desktop-only" onClick={onCreate}>+ 세팅 작성</button>}
           {user ? (
             <div className="user-chip">
-              {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="" />
-              ) : (
-                <div className="avatar-fallback">{(profile?.display_name || "?")[0]}</div>
-              )}
+              {profile?.avatar_url ? <img src={profile.avatar_url} alt="" /> : <div className="avatar-fallback">{displayName[0] || "?"}</div>}
               <div>
-                <strong>{profile?.display_name || "Discord User"}</strong>
-                <button onClick={onLogout}>로그아웃</button>
+                <strong>{displayName}</strong>
+                <div className="user-chip-actions"><button onClick={onProfile}>닉네임</button><button onClick={onLogout}>로그아웃</button></div>
               </div>
             </div>
-          ) : (
-            <button className="btn discord" onClick={onLogin}>
-              Discord로 계속하기
-            </button>
-          )}
+          ) : <button className="btn discord" onClick={onLogin}>Discord로 계속하기</button>}
         </div>
       </div>
     </header>
   );
 }
 
-function Hero({ user, onCreate, onJump }) {
+function Hero({ user, onCreate, onJump, onPresets }) {
   return (
     <section className="hero shell hero-simple">
       <div className="hero-copy">
         <div className="eyebrow gold">AXE BUILD · PUBLIC SETTING HUB</div>
         <h1>추천세팅을<br />가장 빠르게 찾는 곳.</h1>
         <p>
-          다른 사람의 세팅을 장비 슬롯 기준으로 확인하고, 필요한 조합은 복제해서 내 세팅으로 만들 수 있습니다.
-          추천세팅과 개조서 열람은 로그인 없이 이용할 수 있습니다.
+          장비 슬롯을 한눈에 확인하고 마우스를 올려 개조서 옵션을 바로 비교하세요.
+          추천세팅과 개조서는 로그인 없이 볼 수 있고, 로그인하면 프리셋 저장·추천·댓글을 사용할 수 있습니다.
         </p>
         <div className="hero-actions">
           <button className="btn primary" onClick={onJump}>추천세팅 바로 보기</button>
-          {user && <button className="btn ghost" onClick={onCreate}>내 세팅 만들기</button>}
+          {user && <button className="btn ghost" onClick={onPresets}>★ 내 프리셋</button>}
+          {user && <button className="btn ghost" onClick={onCreate}>세팅 작성</button>}
         </div>
       </div>
     </section>
   );
 }
 
-function RecruitmentPanel() {
+function RecruitmentPanel({ onClose }) {
   const contact = String(import.meta.env.VITE_AXE_CONTACT_URL || "").trim();
-
-  const content = (
-    <>
-      <div className="recruitment-banner-copy">
-        <div className="eyebrow gold">AXE RECRUITMENT</div>
-        <h3>AXE 신규 인원 모집</h3>
-        <p>총싸움 좋아하고 · 일 열심히 하고 · 사람 좋고 의리 있는 분</p>
-        <div className="recruitment-banner-chips">
-          <span>편한 분위기</span>
-          <span>할 땐 제대로</span>
-          <span>DM 문의</span>
-        </div>
-      </div>
-      <div className="recruitment-banner-poster">
-        <img src="/assets/axe-recruitment-poster.png" alt="AXE 신규 인원 모집" />
-      </div>
-    </>
-  );
-
   return (
-    <section className="shell recruitment-banner-wrap">
-      {contact ? (
-        <a className="recruitment-banner" href={contact} target="_blank" rel="noreferrer">
-          {content}
-        </a>
-      ) : (
-        <div className="recruitment-banner">{content}</div>
-      )}
-    </section>
+    <Modal title="AXE 신규 인원 모집" onClose={onClose}>
+      <div className="recruit-modal-poster"><img src="/assets/axe-recruitment-poster.png" alt="AXE 신규 인원 모집" /></div>
+      <div className="recruit-modal-copy">
+        <p>편하게 지내되 할 때는 제대로. 총싸움 좋아하고, 일 열심히 하고, 사람 좋고 의리 있는 분을 기다립니다.</p>
+        {contact && <a className="btn primary" href={contact} target="_blank" rel="noreferrer">문의 · 지원하기</a>}
+      </div>
+    </Modal>
   );
 }
 
@@ -283,11 +259,9 @@ function BuildCard({ build, slots, modMap, onOpen, favorite, onFavorite }) {
   return (
     <article className="build-card" onClick={() => onOpen(build)}>
       <div className="build-card-top">
-        <div className="badges">
-          {tags.map((tag) => <span className="badge" key={tag}>{tag}</span>)}
-        </div>
-        <button className={cls("favorite-btn", favorite && "active")} onClick={(e) => { e.stopPropagation(); onFavorite(build); }} aria-label="즐겨찾기">
-          {favorite ? "★" : "☆"}
+        <div className="badges">{tags.map((tag) => <span className="badge" key={tag}>{tag}</span>)}</div>
+        <button className={cls("preset-save-btn", favorite && "active")} onClick={(e) => { e.stopPropagation(); onFavorite(build); }} aria-label="내 프리셋 저장">
+          {favorite ? "★ 프리셋" : "☆ 프리셋"}
         </button>
       </div>
       <div className="build-title-row">
@@ -299,22 +273,24 @@ function BuildCard({ build, slots, modMap, onOpen, favorite, onFavorite }) {
           const slot = (slots || []).find((v) => v.slot_key === meta.key);
           return (
             <div className="mini-slot" key={meta.key}>
-              <div className="mini-slot-visual">
-                <img src={meta.image} alt="" />
-              </div>
+              <div className="mini-slot-visual"><img src={meta.image} alt="" /></div>
               <div className="mini-slot-body">
                 <div className="mini-slot-label"><strong>{meta.label}</strong></div>
                 <div className="mini-slot-values">
-                  <span><em>접두</em>{modName(slot?.prefix_modbook_id)}</span>
-                  <span><em>접미</em>{modName(slot?.suffix_modbook_id)}</span>
+                  <span className="prefix-text"><em>접두</em>{modName(slot?.prefix_modbook_id)}</span>
+                  <span className="suffix-text"><em>접미</em>{modName(slot?.suffix_modbook_id)}</span>
                 </div>
               </div>
             </div>
           );
         })}
       </div>
-      <div className="build-meta">
-        <span>{build.author_name || "익명"}</span><span>★ {build.favorite_count || 0}</span><span>조회 {build.view_count || 0}</span>
+      <div className="build-meta social-meta">
+        <span>{build.author_name || "익명"}</span>
+        <span className="like-stat">▲ {build.like_count || 0}</span>
+        <span className="dislike-stat">▼ {build.dislike_count || 0}</span>
+        <span>댓글 {build.comment_count || 0}</span>
+        <span>조회 {build.view_count || 0}</span>
       </div>
     </article>
   );
@@ -351,7 +327,8 @@ function BuildsPage({
 
     result = [...result].sort((a, b) => {
       if (categoryFilter === "인기" || sort === "popular") {
-        return (b.favorite_count || 0) - (a.favorite_count || 0) ||
+        return socialScore(b) - socialScore(a) ||
+          (b.like_count || 0) - (a.like_count || 0) ||
           (b.view_count || 0) - (a.view_count || 0) ||
           new Date(b.created_at) - new Date(a.created_at);
       }
@@ -420,9 +397,80 @@ function BuildsPage({
   );
 }
 
-function Promo() {
-  return null;
+function NoticeStrip({ announcements, onOpen }) {
+  const notice = announcements.find((v) => v.is_pinned) || announcements[0];
+  if (!notice) return null;
+  return (
+    <div className="shell notice-strip" onClick={onOpen} role="button" tabIndex={0}>
+      <span className="notice-badge">공지</span>
+      <strong>{notice.title}</strong>
+      <p>{notice.body}</p>
+      <em>{fmtDate(notice.created_at)} · 전체보기 →</em>
+    </div>
+  );
 }
+
+function PresetsPage({ user, builds, buildSlotsMap, modMap, favorites, onOpen, onFavorite, onLogin }) {
+  if (!user) return (
+    <section className="shell section"><div className="login-gate"><div><div className="eyebrow gold">MY PRESET</div><h3>내 프리셋은 Discord 로그인 후 사용할 수 있습니다.</h3><p>마음에 드는 추천세팅을 저장해두고 언제든 빠르게 다시 볼 수 있습니다.</p></div><button className="btn discord" onClick={onLogin}>Discord로 계속하기</button></div></section>
+  );
+  const rows = builds.filter((b) => favorites.has(b.id));
+  return (
+    <section className="shell section">
+      <div className="section-head"><div><div className="eyebrow">MY PRESET</div><h2>내 프리셋</h2><p>저장한 세팅을 한 곳에서 관리합니다. 별표를 다시 누르면 프리셋에서 제거됩니다.</p></div><div className="stat-chip">{rows.length}</div></div>
+      {rows.length ? <div className="build-grid">{rows.map((build) => <BuildCard key={build.id} build={build} slots={buildSlotsMap[build.id] || []} modMap={modMap} onOpen={onOpen} favorite={true} onFavorite={onFavorite} />)}</div> : <div className="empty">아직 저장한 프리셋이 없습니다. 추천세팅 우측 상단의 ☆ 프리셋을 눌러 저장해보세요.</div>}
+    </section>
+  );
+}
+
+function NoticesPage({ announcements }) {
+  return (
+    <section className="shell section">
+      <div className="section-head"><div><div className="eyebrow">AXE HUB NOTICE</div><h2>공지사항</h2><p>변경사항, 이용 안내, 데이터 업데이트 소식을 간단하게 확인할 수 있습니다.</p></div></div>
+      <div className="notice-list">
+        {announcements.map((notice) => <article className={cls("notice-card", notice.is_pinned && "pinned")} key={notice.id}><div><span>{notice.is_pinned ? "PINNED" : "NOTICE"}</span><time>{fmtDate(notice.created_at)}</time></div><h3>{notice.title}</h3><p>{notice.body}</p></article>)}
+      </div>
+      {!announcements.length && <div className="empty">등록된 공지가 없습니다.</div>}
+    </section>
+  );
+}
+
+function FloatingRemote({ user, announcements, onRecruit, onNotice, onReport, onPreset }) {
+  return (
+    <aside className="floating-remote" aria-label="빠른 메뉴">
+      <button className="remote-recruit" onClick={onRecruit}><img src="/assets/axe-recruitment-poster.png" alt="" /><span>모집중</span></button>
+      <button onClick={onNotice}><b>공지</b>{announcements.length > 0 && <span className="remote-dot">{Math.min(announcements.length, 9)}</span>}</button>
+      <button onClick={onReport}><b>제보</b><small>정보 수정</small></button>
+      {user && <button onClick={onPreset}><b>내 프리셋</b><small>저장 세팅</small></button>}
+    </aside>
+  );
+}
+
+function ProfileModal({ user, profile, request, onClose, onRequest }) {
+  const [name, setName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const submit = async () => {
+    if (!name.trim()) return;
+    setSaving(true);
+    await onRequest(name.trim());
+    setSaving(false);
+    setName("");
+  };
+  return (
+    <Modal title="닉네임 설정" onClose={onClose}>
+      <div className="nickname-panel">
+        <div className="nickname-current"><span>현재 표시 이름</span><strong>{displayProfileName(profile, user)}</strong><small>{profile?.approved_nickname ? "관리자 승인 닉네임" : "Discord 표시 이름"}</small></div>
+        <div className="nickname-explain"><strong>닉네임은 신청/승인제로 운영합니다.</strong><p>타인 사칭과 혼동을 줄이기 위해 신청 후 관리자가 확인합니다. 승인되면 이후 작성글과 댓글에 해당 닉네임이 표시됩니다.</p></div>
+        {request?.status === "pending" && <div className="nickname-status pending"><span>승인 대기</span><strong>{request.requested_name}</strong></div>}
+        {request?.status === "rejected" && <div className="nickname-status rejected"><span>최근 신청 반려</span><strong>{request.requested_name}</strong><p>{request.admin_note || "관리자 메모 없음"}</p></div>}
+        <label className="nickname-input"><span>신청할 닉네임</span><input value={name} maxLength={16} onChange={(e) => setName(e.target.value)} placeholder="2~16자" /></label>
+        <div className="modal-actions inline-actions"><button className="btn primary" onClick={submit} disabled={saving}>{saving ? "신청 중..." : "닉네임 신청"}</button></div>
+      </div>
+    </Modal>
+  );
+}
+
+function Promo() { return null; }
 
 function ModbookDetail({ mod }) {
   if (!mod) return <div className="modbook-detail empty-detail">개조서를 선택하세요.</div>;
@@ -499,70 +547,56 @@ function ModbooksPage({ modbooks }) {
 
 function ReportsPage({ user, myReports, onNewReport, onLogin }) {
   return (
-    <section className="shell section">
-      <div className="section-head">
-        <div><div className="eyebrow">DATA REPORT</div><h2>개조서 제보</h2><p>누락된 개조서와 잘못된 옵션을 한 곳에서 정리해 제보할 수 있습니다.</p></div>
-        {user && <button className="btn primary" onClick={onNewReport}>+ 새 제보</button>}
+    <section className="shell section reports-page">
+      <div className="report-hero">
+        <div><div className="eyebrow gold">HELP AXE BUILD</div><h2>새 개조서를 발견했거나<br />옵션이 잘못되어 있나요?</h2><p>제보 하나가 전체 추천세팅의 정확도를 올립니다. 스크린샷이 있으면 같이 첨부해주세요.</p></div>
+        {user ? <button className="btn primary report-cta" onClick={onNewReport}>+ 지금 제보하기</button> : <button className="btn discord report-cta" onClick={onLogin}>로그인하고 제보하기</button>}
       </div>
       <div className="report-guide">
-        <div className="guide-card"><span>01</span><strong>누락 제보</strong><p>새로운 개조서가 도감에 없을 때 등록합니다.</p></div>
-        <div className="guide-card"><span>02</span><strong>수정 제보</strong><p>기존 개조서의 수치·부위·옵션이 다를 때 수정 요청합니다.</p></div>
+        <div className="guide-card"><span>01</span><strong>누락 제보</strong><p>도감에 없는 새로운 개조서를 등록합니다.</p></div>
+        <div className="guide-card"><span>02</span><strong>수정 제보</strong><p>수치·부위·옵션이 다를 때 기존 정보를 수정 요청합니다.</p></div>
         <div className="guide-card"><span>03</span><strong>검수 반영</strong><p>관리자 승인 후 개조서 DB에 자동으로 반영됩니다.</p></div>
       </div>
-      {!user ? (
-        <div className="login-gate">
-          <div><div className="eyebrow gold">DISCORD SIGN-IN</div><h3>제보와 세팅 저장에만 로그인이 필요합니다.</h3><p>추천세팅과 개조서는 로그인 없이 볼 수 있습니다. Discord 로그인은 작성자 식별과 개인 데이터 저장에만 사용하며 서버 가입·메시지 접근 권한은 요청하지 않습니다.</p></div>
-          <button className="btn discord" onClick={onLogin}>Discord로 계속하기</button>
-        </div>
-      ) : myReports.length ? (
-        <div className="report-list">
-          {myReports.map((r) => (
-            <article className="report-row" key={r.id}><div><span className={cls("status", r.status)}>{r.status}</span><strong>{r.name}</strong><span>{r.mod_type} · {r.category || "기타"}</span></div><time>{fmtDate(r.created_at)}</time></article>
-          ))}
-        </div>
-      ) : <div className="empty">아직 등록한 제보가 없습니다.</div>}
+      {user && <div className="subsection-title"><div><span>MY REPORTS</span><h3>내 제보 현황</h3></div><div className="report-count">{myReports.length}</div></div>}
+      {user ? (myReports.length ? <div className="report-list">{myReports.map((r) => <article className="report-row" key={r.id}><div><span className={cls("status", r.status)}>{r.status}</span><strong>{r.name}</strong><span>{r.mod_type} · {r.category || "기타"}</span></div><time>{fmtDate(r.created_at)}</time></article>)}</div> : <div className="empty">아직 등록한 제보가 없습니다.</div>) : <div className="login-gate compact-login-gate"><p>추천세팅과 개조서는 로그인 없이 볼 수 있습니다. 제보 등록만 작성자 식별을 위해 Discord 로그인이 필요합니다.</p></div>}
     </section>
   );
 }
 
-function AdminPage({ profile, reports, onApprove, onReject }) {
-  if (!profile?.is_admin) {
-    return <section className="shell section"><div className="empty">관리자 권한이 없습니다.</div></section>;
-  }
+function AdminPage({
+  profile,
+  reports,
+  nicknameRequests,
+  announcements,
+  onApprove,
+  onReject,
+  onNicknameReview,
+  onAnnouncementSave,
+  onAnnouncementDelete
+}) {
+  const [mode, setMode] = useState("reports");
+  const [noticeForm, setNoticeForm] = useState({ title: "", body: "", is_pinned: false });
+  if (!profile?.is_admin) return <section className="shell section"><div className="empty">관리자 권한이 없습니다.</div></section>;
   const pending = reports.filter((r) => r.status === "pending");
+  const pendingNames = nicknameRequests.filter((r) => r.status === "pending");
+  const saveNotice = async () => {
+    if (!noticeForm.title.trim() || !noticeForm.body.trim()) return;
+    await onAnnouncementSave(noticeForm);
+    setNoticeForm({ title: "", body: "", is_pinned: false });
+  };
   return (
-    <section className="shell section">
-      <div className="section-head">
-        <div>
-          <div className="eyebrow">ADMIN REVIEW</div>
-          <h2>제보 검수</h2>
-          <p>승인 시 개조서 DB에 즉시 반영됩니다.</p>
-        </div>
-        <div className="stat-chip">{pending.length} pending</div>
+    <section className="shell section admin-page">
+      <div className="section-head"><div><div className="eyebrow">AXE HUB ADMIN</div><h2>관리 센터</h2><p>제보 검수, 닉네임 승인, 공지사항을 한 곳에서 관리합니다.</p></div></div>
+      <div className="admin-tabs">
+        <button className={cls(mode === "reports" && "active")} onClick={() => setMode("reports")}>개조서 제보 <span>{pending.length}</span></button>
+        <button className={cls(mode === "nicknames" && "active")} onClick={() => setMode("nicknames")}>닉네임 신청 <span>{pendingNames.length}</span></button>
+        <button className={cls(mode === "notices" && "active")} onClick={() => setMode("notices")}>공지사항 <span>{announcements.length}</span></button>
       </div>
-      <div className="admin-list">
-        {pending.map((r) => (
-          <article className="admin-card" key={r.id}>
-            <div className="admin-card-head">
-              <div>
-                <span className="status pending">pending</span>
-                <h3>{r.name}</h3>
-              </div>
-              <span>{r.mod_type} · {r.category || "기타"}</span>
-            </div>
-            <dl>
-              <div><dt>부위</dt><dd>{r.parts || "-"}</dd></div>
-              <div><dt>옵션</dt><dd className="preline">{r.options_text || "-"}</dd></div>
-              <div><dt>메모</dt><dd>{r.note || "-"}</dd></div>
-            </dl>
-            <div className="admin-actions">
-              <button className="btn ghost" onClick={() => onReject(r)}>반려</button>
-              <button className="btn primary" onClick={() => onApprove(r)}>승인</button>
-            </div>
-          </article>
-        ))}
-      </div>
-      {!pending.length && <div className="empty">대기 중인 제보가 없습니다.</div>}
+      {mode === "reports" && <div className="admin-list">{pending.map((r) => <article className="admin-card" key={r.id}><div className="admin-card-head"><div><span className="status pending">pending</span><h3>{r.name}</h3></div><span>{r.mod_type} · {r.category || "기타"}</span></div><dl><div><dt>부위</dt><dd>{r.parts || "-"}</dd></div><div><dt>옵션</dt><dd className="preline">{r.options_text || "-"}</dd></div><div><dt>메모</dt><dd>{r.note || "-"}</dd></div></dl><div className="admin-actions"><button className="btn ghost" onClick={() => onReject(r)}>반려</button><button className="btn primary" onClick={() => onApprove(r)}>승인</button></div></article>)}</div>}
+      {mode === "reports" && !pending.length && <div className="empty">대기 중인 개조서 제보가 없습니다.</div>}
+      {mode === "nicknames" && <div className="admin-list">{pendingNames.map((r) => <article className="admin-card nickname-admin-card" key={r.id}><div className="admin-card-head"><div><span className="status pending">pending</span><h3>{r.current_name || "Discord 사용자"} <span className="nickname-arrow">→</span> {r.requested_name}</h3></div><span>{fmtDate(r.created_at)}</span></div><p>신청자 UUID · {r.user_id}</p><div className="admin-actions"><button className="btn ghost" onClick={() => onNicknameReview(r, false)}>반려</button><button className="btn primary" onClick={() => onNicknameReview(r, true)}>승인</button></div></article>)}</div>}
+      {mode === "nicknames" && !pendingNames.length && <div className="empty">대기 중인 닉네임 신청이 없습니다.</div>}
+      {mode === "notices" && <><div className="notice-admin-form"><input value={noticeForm.title} onChange={(e) => setNoticeForm((p) => ({ ...p, title: e.target.value }))} placeholder="공지 제목" /><textarea value={noticeForm.body} onChange={(e) => setNoticeForm((p) => ({ ...p, body: e.target.value }))} placeholder="공지 내용" /><label><input type="checkbox" checked={noticeForm.is_pinned} onChange={(e) => setNoticeForm((p) => ({ ...p, is_pinned: e.target.checked }))} /> 상단 고정</label><button className="btn primary" onClick={saveNotice}>공지 등록</button></div><div className="notice-list admin-notice-list">{announcements.map((n) => <article className="notice-card" key={n.id}><div><span>{n.is_pinned ? "PINNED" : "NOTICE"}</span><button className="text-danger" onClick={() => onAnnouncementDelete(n)}>삭제</button></div><h3>{n.title}</h3><p>{n.body}</p></article>)}</div></>}
     </section>
   );
 }
@@ -574,7 +608,13 @@ function BuildDetail({
   favorite,
   user,
   profile,
+  userVote,
+  comments,
   onFavorite,
+  onVote,
+  onComment,
+  onDeleteComment,
+  onLogin,
   onClose,
   onClone,
   onEdit,
@@ -582,72 +622,58 @@ function BuildDetail({
 }) {
   const summary = summarizeBuildOptions(slots, modMap);
   const tags = visibleTags(build.tags);
-  const canManage = Boolean(
-    user && (profile?.is_admin || (build.author_id && build.author_id === user.id))
-  );
+  const [commentText, setCommentText] = useState("");
+  const [commentBusy, setCommentBusy] = useState(false);
+  const canManage = Boolean(user && (profile?.is_admin || (build.author_id && build.author_id === user.id)));
 
-  const RenderSelectedMod = ({ type, mod }) => (
-    <div className={cls("equipment-mod", type === "접두" ? "prefix-mod" : "suffix-mod", !mod && "is-empty")}>
-      <div className="equipment-mod-title">
-        <span>{type}</span>
-        <b>{mod?.name || "선택 없음"}</b>
+  const submitComment = async () => {
+    if (!commentText.trim()) return;
+    setCommentBusy(true);
+    await onComment(commentText.trim());
+    setCommentText("");
+    setCommentBusy(false);
+  };
+
+  const HoverMod = ({ type, mod }) => (
+    <div className={cls("hover-mod", type === "접두" ? "prefix-mod" : "suffix-mod", !mod && "is-empty")}>
+      <div className="hover-mod-head"><span>{type}</span><strong>{mod?.name || "선택 없음"}</strong></div>
+      <div className="hover-mod-options">
+        {mod ? optionLines(mod).map((line, idx) => <p className={line.trim().startsWith("*") ? "warning" : ""} key={`${mod.id}-${idx}`}>{line.replace(/^\*/, "⚠ ")}</p>) : <p>선택된 개조서가 없습니다.</p>}
       </div>
-      {mod && (
-        <div className="equipment-option-list">
-          {optionLines(mod).map((line, idx) => (
-            <div className={cls("equipment-option-line", line.trim().startsWith("*") && "warning")} key={`${mod.id}-${idx}`}>
-              {line.replace(/^\*/, "⚠ ")}
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 
   return (
     <Modal title={build.title} onClose={onClose} wide>
       <div className="legacy-build-head">
-        <div>
-          <span className="member-build-label">{build.author_id ? "MEMBER BUILD" : "BUILD"}</span>
-          <div className="badges">{tags.map((tag) => <span className="badge" key={tag}>{tag}</span>)}</div>
-          <p>{build.summary || "세팅 설명이 없습니다."}</p>
+        <div><span className="member-build-label">{build.author_id ? "MEMBER BUILD" : "BUILD"}</span><div className="badges">{tags.map((tag) => <span className="badge" key={tag}>{tag}</span>)}</div><p>{build.summary || "세팅 설명이 없습니다."}</p></div>
+        <div className="detail-head-actions">
+          <button className={cls("preset-prominent", favorite && "active")} onClick={() => onFavorite(build)}>{favorite ? "★ 내 프리셋 저장됨" : "☆ 내 프리셋"}</button>
+          <div className="detail-stats"><span>작성 {build.author_name || "익명"}</span><span>조회 {build.view_count || 0}</span></div>
         </div>
-        <div className="detail-stats">
-          <span>작성 {build.author_name || "익명"}</span>
-          <span>★ {build.favorite_count || 0}</span>
-          <span>조회 {build.view_count || 0}</span>
-        </div>
+      </div>
+
+      <div className="social-action-row">
+        <button className={cls("vote-btn like", userVote === 1 && "active")} onClick={() => user ? onVote(userVote === 1 ? 0 : 1) : onLogin()}>▲ 추천 <strong>{build.like_count || 0}</strong></button>
+        <button className={cls("vote-btn dislike", userVote === -1 && "active")} onClick={() => user ? onVote(userVote === -1 ? 0 : -1) : onLogin()}>▼ 비추천 <strong>{build.dislike_count || 0}</strong></button>
+        <span className="comment-count-chip">댓글 {build.comment_count || comments.length || 0}</span>
       </div>
 
       {build.description && <div className="description legacy-description">{build.description}</div>}
 
-      <div className="legacy-build-layout">
-        <section className="equipment-panel">
-          <div className="equipment-panel-head">
-            <div>
-              <span>GEAR SET</span>
-              <strong>장비 구성</strong>
-            </div>
-            <em>겉옷 · 상의 · 하의 · 신발</em>
-          </div>
-
-          <div className="equipment-grid">
+      <div className="legacy-build-layout hover-build-layout">
+        <section className="equipment-panel hover-equipment-panel">
+          <div className="equipment-panel-head"><div><span>GEAR SET</span><strong>장비 구성</strong></div><em>장비에 마우스를 올리면 옵션 표시</em></div>
+          <div className="equipment-grid hover-equipment-grid">
             {SLOT_META.map((meta) => {
               const slot = slots.find((s) => s.slot_key === meta.key);
               const prefix = modMap.get(slot?.prefix_modbook_id);
               const suffix = modMap.get(slot?.suffix_modbook_id);
-
               return (
-                <article className="equipment-item" key={meta.key}>
-                  <div className="equipment-visual">
-                    <img className="equipment-image" src={meta.image} alt={`${meta.label} AXE 팀복`} />
-                  </div>
-                  <div className="equipment-name">{meta.label}</div>
-                  <div className="equipment-mods">
-                    <RenderSelectedMod type="접두" mod={prefix} />
-                    <RenderSelectedMod type="접미" mod={suffix} />
-                  </div>
-                  {slot?.comment && <p className="equipment-comment">{slot.comment}</p>}
+                <article className="hover-equipment-item" key={meta.key} tabIndex={0}>
+                  <div className="equipment-visual"><img className="equipment-image" src={meta.image} alt={`${meta.label} AXE 팀복`} /></div>
+                  <div className="hover-equipment-label"><strong>{meta.label}</strong><div><span className="prefix-text">접두 {prefix?.name || "미선택"}</span><span className="suffix-text">접미 {suffix?.name || "미선택"}</span></div></div>
+                  <div className="equipment-hover-panel"><div className="hover-panel-title"><span>{meta.label}</span><em>장비 옵션</em></div><HoverMod type="접두" mod={prefix} /><HoverMod type="접미" mod={suffix} />{slot?.comment && <p className="hover-comment">{slot.comment}</p>}</div>
                 </article>
               );
             })}
@@ -655,49 +681,23 @@ function BuildDetail({
         </section>
 
         <aside className="summary-panel">
-          <div className="summary-head">
-            <div><span>MAX ROLL SUMMARY</span><strong>전체 옵션 요약</strong></div>
-            <em>최대값 합산</em>
-          </div>
-
-          <div className="summary-rows">
-            {summary.rows.length ? summary.rows.map((row) => (
-              <div className="summary-row" key={`${row.label}-${row.unit}`}>
-                <span>{row.label}</span>
-                <strong>{formatSigned(row.value, row.unit)}</strong>
-              </div>
-            )) : <div className="summary-empty">계산 가능한 옵션 범위가 없습니다.</div>}
-          </div>
-
-          {summary.warnings.length > 0 && (
-            <div className="warning-summary">
-              <span>주의 옵션</span>
-              {summary.warnings.slice(0, 3).map((warning) => <p key={warning}>{warning}</p>)}
-            </div>
-          )}
-
-          <div className="part-comments">
-            <span>부위별 코멘트</span>
-            {SLOT_META.map((meta) => {
-              const slot = slots.find((s) => s.slot_key === meta.key);
-              if (!slot?.comment) return null;
-              return <div key={meta.key}><strong>{meta.label}</strong><p>{slot.comment}</p></div>;
-            })}
-          </div>
+          <div className="summary-head"><div><span>MAX ROLL SUMMARY</span><strong>전체 옵션 요약</strong></div><em>최대값 합산</em></div>
+          <div className="summary-rows">{summary.rows.length ? summary.rows.map((row) => <div className="summary-row" key={`${row.label}-${row.unit}`}><span>{row.label}</span><strong>{formatSigned(row.value, row.unit)}</strong></div>) : <div className="summary-empty">계산 가능한 옵션 범위가 없습니다.</div>}</div>
+          {summary.warnings.length > 0 && <div className="warning-summary"><span>주의 옵션</span>{summary.warnings.slice(0, 4).map((warning) => <p key={warning}>{warning}</p>)}</div>}
+          <div className="part-comments"><span>부위별 코멘트</span>{SLOT_META.map((meta) => { const slot = slots.find((s) => s.slot_key === meta.key); if (!slot?.comment) return null; return <div key={meta.key}><strong>{meta.label}</strong><p>{slot.comment}</p></div>; })}</div>
         </aside>
       </div>
 
+      <section className="comments-section">
+        <div className="comments-head"><div><span>BUILD TALK</span><h3>댓글</h3></div><strong>{comments.length}</strong></div>
+        {user ? <div className="comment-write"><textarea value={commentText} maxLength={500} onChange={(e) => setCommentText(e.target.value)} placeholder="이 세팅을 써본 느낌이나 보완점을 남겨주세요." /><button className="btn primary" onClick={submitComment} disabled={commentBusy}>{commentBusy ? "등록 중..." : "댓글 등록"}</button></div> : <button className="comment-login" onClick={onLogin}>댓글을 남기려면 Discord 로그인</button>}
+        <div className="comment-list">{comments.map((comment) => <article className="comment-row" key={comment.id}><div className="comment-meta"><strong>{comment.author_name}</strong><span>{fmtDate(comment.created_at)}</span></div><p>{comment.body}</p>{user && (profile?.is_admin || comment.user_id === user.id) && <button className="comment-delete" onClick={() => onDeleteComment(comment)}>삭제</button>}</article>)}</div>
+        {!comments.length && <div className="comment-empty">첫 댓글을 남겨보세요.</div>}
+      </section>
+
       <div className="modal-actions sticky build-detail-actions">
-        {canManage && (
-          <>
-            <button className="btn ghost" onClick={() => onEdit(build, slots)}>수정</button>
-            <button className="btn danger" onClick={() => onDelete(build)}>삭제</button>
-          </>
-        )}
+        {canManage && <><button className="btn ghost" onClick={() => onEdit(build, slots)}>수정</button><button className="btn danger" onClick={() => onDelete(build)}>삭제</button></>}
         {user && <button className="btn ghost" onClick={onClone}>복제해서 작성</button>}
-        <button className={cls("btn", favorite ? "primary" : "ghost")} onClick={() => onFavorite(build)}>
-          {favorite ? "★ 즐겨찾기 해제" : "☆ 즐겨찾기"}
-        </button>
       </div>
     </Modal>
   );
@@ -909,11 +909,7 @@ function BuildEditor({
           .insert({
             ...payload,
             author_id: user.id,
-            author_name:
-              profile?.display_name ||
-              user.user_metadata?.full_name ||
-              user.user_metadata?.name ||
-              "Discord User",
+            author_name: displayProfileName(profile, user),
             is_official: false
           })
           .select("*")
@@ -1195,12 +1191,19 @@ export default function App() {
   const [favorites, setFavorites] = useState(new Set());
   const [myReports, setMyReports] = useState([]);
   const [adminReports, setAdminReports] = useState([]);
+  const [userVotes, setUserVotes] = useState(new Map());
+  const [announcements, setAnnouncements] = useState([]);
+  const [nicknameRequest, setNicknameRequest] = useState(null);
+  const [adminNicknameRequests, setAdminNicknameRequests] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [selectedBuild, setSelectedBuild] = useState(null);
   const [selectedSlots, setSelectedSlots] = useState([]);
+  const [selectedComments, setSelectedComments] = useState([]);
   const [editor, setEditor] = useState(null);
   const [reportEditor, setReportEditor] = useState(false);
+  const [profileModal, setProfileModal] = useState(false);
+  const [recruitModal, setRecruitModal] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState("전체");
   const [toast, setToast] = useState({ message: "", tone: "default" });
 
@@ -1227,7 +1230,7 @@ export default function App() {
       setSession(nextSession || null);
     });
 
-    Promise.all([loadBuilds(), loadModbooks()]).finally(() => {
+    Promise.all([loadBuilds(), loadModbooks(), loadAnnouncements()]).finally(() => {
       if (alive) setLoading(false);
     });
 
@@ -1243,13 +1246,17 @@ export default function App() {
       setFavorites(new Set());
       setMyReports([]);
       setAdminReports([]);
+      setUserVotes(new Map());
+      setNicknameRequest(null);
+      setAdminNicknameRequests([]);
+      loadAnnouncements();
       return;
     }
     loadUserData(user.id);
   }, [user?.id]);
 
   useEffect(() => {
-    if (profile?.is_admin) loadAdminReports();
+    if (profile?.is_admin) loadAdminData();
   }, [profile?.is_admin]);
 
   async function loadBuilds() {
@@ -1278,23 +1285,37 @@ export default function App() {
   }
 
   async function loadUserData(userId) {
-    const [{ data: p }, { data: fav }, { data: reports }] = await Promise.all([
+    const [{ data: p }, { data: fav }, { data: reports }, { data: votes }, { data: nick }] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
       supabase.from("favorites").select("build_id").eq("user_id", userId),
-      supabase.from("modbook_reports").select("*").eq("reporter_id", userId).order("created_at", { ascending: false })
+      supabase.from("modbook_reports").select("*").eq("reporter_id", userId).order("created_at", { ascending: false }),
+      supabase.from("build_votes").select("build_id,value").eq("user_id", userId),
+      supabase.from("nickname_requests").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle()
     ]);
     setProfile(p || null);
     setFavorites(new Set((fav || []).map((f) => f.build_id)));
     setMyReports(reports || []);
+    setUserVotes(new Map((votes || []).map((v) => [v.build_id, v.value])));
+    setNicknameRequest(nick || null);
   }
 
-  async function loadAdminReports() {
-    const { data, error } = await supabase
-      .from("modbook_reports")
-      .select("*")
-      .order("created_at", { ascending: false });
+  async function loadAnnouncements() {
+    const { data, error } = await supabase.from("announcements").select("*").eq("is_published", true).order("is_pinned", { ascending: false }).order("created_at", { ascending: false });
+    if (error) return notify(`공지 로드 실패: ${error.message}`, "error");
+    setAnnouncements(data || []);
+  }
+
+  async function loadAdminData() {
+    const [{ data: reports, error: reportError }, { data: names, error: nameError }, { data: notices, error: noticeError }] = await Promise.all([
+      supabase.from("modbook_reports").select("*").order("created_at", { ascending: false }),
+      supabase.from("nickname_requests").select("*").order("created_at", { ascending: false }),
+      supabase.from("announcements").select("*").order("is_pinned", { ascending: false }).order("created_at", { ascending: false })
+    ]);
+    const error = reportError || nameError || noticeError;
     if (error) return notify(error.message, "error");
-    setAdminReports(data || []);
+    setAdminReports(reports || []);
+    setAdminNicknameRequests(names || []);
+    setAnnouncements(notices || []);
   }
 
   async function login() {
@@ -1317,23 +1338,19 @@ export default function App() {
 
   async function openBuild(build, countView = true) {
     setSelectedBuild(build);
-
-    const { data, error } = await supabase
-      .from("build_slots")
-      .select("*")
-      .eq("build_id", build.id)
-      .order("id");
-
-    if (error) notify(error.message, "error");
-    setSelectedSlots(data || []);
-
-    if (countView) {
-      supabase.rpc("increment_build_view", { p_build_id: build.id }).then(() => loadBuilds());
-    }
+    const [{ data: slots, error: slotError }, { data: comments, error: commentError }] = await Promise.all([
+      supabase.from("build_slots").select("*").eq("build_id", build.id).order("id"),
+      supabase.from("build_comments").select("*").eq("build_id", build.id).order("created_at", { ascending: true })
+    ]);
+    if (slotError) notify(slotError.message, "error");
+    if (commentError) notify(commentError.message, "error");
+    setSelectedSlots(slots || []);
+    setSelectedComments(comments || []);
+    if (countView) supabase.rpc("increment_build_view", { p_build_id: build.id }).then(() => loadBuilds());
   }
 
   async function toggleFavorite(build) {
-    if (!user) return notify("즐겨찾기는 Discord 로그인 후 사용할 수 있습니다.", "error");
+    if (!user) return notify("내 프리셋 저장은 Discord 로그인 후 사용할 수 있습니다.", "error");
     const exists = favorites.has(build.id);
     let error;
     if (exists) {
@@ -1346,6 +1363,65 @@ export default function App() {
     exists ? next.delete(build.id) : next.add(build.id);
     setFavorites(next);
     await loadBuilds();
+  }
+
+  async function voteBuild(build, value) {
+    if (!user) return login();
+    const { error } = await supabase.rpc("set_build_vote", { p_build_id: build.id, p_value: value });
+    if (error) return notify(`추천 처리 실패: ${error.message}`, "error");
+    const next = new Map(userVotes);
+    if (value === 0) next.delete(build.id); else next.set(build.id, value);
+    setUserVotes(next);
+    await loadBuilds();
+    const { data: refreshed } = await supabase.from("builds").select("*").eq("id", build.id).maybeSingle();
+    if (refreshed) setSelectedBuild((prev) => prev?.id === build.id ? refreshed : prev);
+  }
+
+  async function addComment(body) {
+    if (!user || !selectedBuild) return login();
+    const { error } = await supabase.from("build_comments").insert({ build_id: selectedBuild.id, user_id: user.id, author_name: displayProfileName(profile, user), body });
+    if (error) return notify(`댓글 등록 실패: ${error.message}`, "error");
+    await openBuild(selectedBuild, false);
+    await loadBuilds();
+  }
+
+  async function deleteComment(comment) {
+    const { error } = await supabase.from("build_comments").delete().eq("id", comment.id);
+    if (error) return notify(`댓글 삭제 실패: ${error.message}`, "error");
+    await openBuild(selectedBuild, false);
+    await loadBuilds();
+  }
+
+  async function requestNickname(name) {
+    const { error } = await supabase.rpc("request_nickname", { p_requested_name: name });
+    if (error) return notify(`닉네임 신청 실패: ${error.message}`, "error");
+    notify("닉네임 신청을 접수했습니다.");
+    await loadUserData(user.id);
+  }
+
+  async function reviewNickname(request, approveValue) {
+    const note = approveValue ? null : (window.prompt("반려 사유를 입력하세요. (선택)") || null);
+    const { error } = await supabase.rpc("review_nickname_request", { p_request_id: request.id, p_approve: approveValue, p_admin_note: note });
+    if (error) return notify(`닉네임 처리 실패: ${error.message}`, "error");
+    notify(approveValue ? "닉네임을 승인했습니다." : "닉네임 신청을 반려했습니다.");
+    await loadAdminData();
+    if (user) await loadUserData(user.id);
+    await loadBuilds();
+  }
+
+  async function saveAnnouncement(form) {
+    const { error } = await supabase.from("announcements").insert({ title: form.title.trim(), body: form.body.trim(), is_pinned: Boolean(form.is_pinned), is_published: true, created_by: user.id });
+    if (error) return notify(`공지 등록 실패: ${error.message}`, "error");
+    notify("공지를 등록했습니다.");
+    await loadAdminData();
+  }
+
+  async function deleteAnnouncement(notice) {
+    if (!window.confirm(`"${notice.title}" 공지를 삭제할까요?`)) return;
+    const { error } = await supabase.from("announcements").delete().eq("id", notice.id);
+    if (error) return notify(`공지 삭제 실패: ${error.message}`, "error");
+    notify("공지를 삭제했습니다.");
+    await loadAdminData();
   }
 
   async function saveFinished(build, action = "create") {
@@ -1386,14 +1462,14 @@ export default function App() {
     const { error } = await supabase.rpc("approve_modbook_report", { p_report_id: report.id });
     if (error) return notify(error.message, "error");
     notify("제보를 승인했습니다.");
-    await Promise.all([loadAdminReports(), loadModbooks()]);
+    await Promise.all([loadAdminData(), loadModbooks()]);
   }
 
   async function reject(report) {
     const { error } = await supabase.rpc("reject_modbook_report", { p_report_id: report.id });
     if (error) return notify(error.message, "error");
     notify("제보를 반려했습니다.");
-    await loadAdminReports();
+    await loadAdminData();
   }
 
   function jumpToBuilds() {
@@ -1428,38 +1504,21 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`}</pre>
         onLogin={login}
         onLogout={logout}
         onCreate={() => setEditor({ build: null, slots: [], mode: "create" })}
+        onProfile={() => setProfileModal(true)}
       />
 
       {tab === "builds" && (
         <>
-          <Hero
-            user={user}
-            onCreate={() => setEditor({ build: null, slots: [], mode: "create" })}
-            onJump={jumpToBuilds}
-          />
-          <BuildsPage
-            builds={builds}
-            buildSlotsMap={buildSlotsMap}
-            modMap={modMap}
-            loading={loading}
-            user={user}
-            favorites={favorites}
-            onOpen={openBuild}
-            onFavorite={toggleFavorite}
-            onCreate={() => setEditor({ build: null, slots: [], mode: "create" })}
-            categoryFilter={categoryFilter}
-            setCategoryFilter={setCategoryFilter}
-          />
-          <RecruitmentPanel />
+          <NoticeStrip announcements={announcements} onOpen={() => setTab("notices")} />
+          <Hero user={user} onCreate={() => setEditor({ build: null, slots: [], mode: "create" })} onJump={jumpToBuilds} onPresets={() => setTab("presets")} />
+          <BuildsPage builds={builds} buildSlotsMap={buildSlotsMap} modMap={modMap} loading={loading} user={user} favorites={favorites} onOpen={openBuild} onFavorite={toggleFavorite} onCreate={() => setEditor({ build: null, slots: [], mode: "create" })} categoryFilter={categoryFilter} setCategoryFilter={setCategoryFilter} />
         </>
       )}
+      {tab === "presets" && <PresetsPage user={user} builds={builds} buildSlotsMap={buildSlotsMap} modMap={modMap} favorites={favorites} onOpen={openBuild} onFavorite={toggleFavorite} onLogin={login} />}
       {tab === "modbooks" && <ModbooksPage modbooks={modbooks} />}
-      {tab === "reports" && (
-        <ReportsPage user={user} myReports={myReports} onNewReport={() => setReportEditor(true)} onLogin={login} />
-      )}
-      {tab === "admin" && (
-        <AdminPage profile={profile} reports={adminReports} onApprove={approve} onReject={reject} />
-      )}
+      {tab === "reports" && <ReportsPage user={user} myReports={myReports} onNewReport={() => setReportEditor(true)} onLogin={login} />}
+      {tab === "notices" && <NoticesPage announcements={announcements} />}
+      {tab === "admin" && <AdminPage profile={profile} reports={adminReports} nicknameRequests={adminNicknameRequests} announcements={announcements} onApprove={approve} onReject={reject} onNicknameReview={reviewNickname} onAnnouncementSave={saveAnnouncement} onAnnouncementDelete={deleteAnnouncement} />}
 
       <footer className="footer">
         <div className="shell">
@@ -1476,7 +1535,13 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`}</pre>
           favorite={favorites.has(selectedBuild.id)}
           user={user}
           profile={profile}
+          userVote={userVotes.get(selectedBuild.id) || 0}
+          comments={selectedComments}
           onFavorite={toggleFavorite}
+          onVote={(value) => voteBuild(selectedBuild, value)}
+          onComment={addComment}
+          onDeleteComment={deleteComment}
+          onLogin={login}
           onClose={() => setSelectedBuild(null)}
           onEdit={(build, slots) => {
             setEditor({ build, slots, mode: "edit" });
@@ -1511,6 +1576,18 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`}</pre>
           onSaved={reportFinished}
         />
       )}
+
+      {profileModal && user && <ProfileModal user={user} profile={profile} request={nicknameRequest} onClose={() => setProfileModal(false)} onRequest={requestNickname} />}
+      {recruitModal && <RecruitmentPanel onClose={() => setRecruitModal(false)} />}
+
+      <FloatingRemote
+        user={user}
+        announcements={announcements}
+        onRecruit={() => setRecruitModal(true)}
+        onNotice={() => setTab("notices")}
+        onReport={() => setTab("reports")}
+        onPreset={() => user ? setTab("presets") : login()}
+      />
 
       <Toast message={toast.message} tone={toast.tone} />
 
