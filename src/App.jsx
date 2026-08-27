@@ -8,8 +8,9 @@ const SLOT_META = [
   { key: "shoes", label: "신발", icon: "04", image: "/assets/equipment/shoes-team.webp", keywords: ["신발"] }
 ];
 
-const BASE_CATEGORIES = ["전체", "인기", "무법지대"];
-const HIDDEN_TAGS = new Set(["AXE 추천", "AXE OFFICIAL", "공식"]);
+const BASE_CATEGORIES = ["전체", "인기", "무법지대", "체력", "이동속도", "생활"];
+const LIFE_CATEGORIES = ["벌목", "낚시", "채광", "택배"];
+const HIDDEN_TAGS = new Set(["AXE 추천", "AXE OFFICIAL", "공식", "밸런스"]);
 
 const emptySlots = () =>
   Object.fromEntries(
@@ -93,15 +94,65 @@ function buildSearchText(build) {
     .toLowerCase();
 }
 
-function buildCategoryList(builds) {
-  const priority = new Set(BASE_CATEGORIES);
-  const tags = [];
-  for (const build of builds || []) {
-    for (const tag of visibleTags(build.tags)) {
-      if (!priority.has(tag) && !tags.includes(tag)) tags.push(tag);
-    }
+function buildCategoryList() {
+  return BASE_CATEGORIES;
+}
+
+function buildCategoryCorpus(build, slots, modMap) {
+  const modText = (slots || [])
+    .flatMap((slot) => [slot?.prefix_modbook_id, slot?.suffix_modbook_id])
+    .map((id) => modMap.get(id))
+    .filter(Boolean)
+    .flatMap((mod) => [
+      mod.name,
+      mod.category,
+      mod.parts,
+      mod.option1,
+      mod.option2,
+      mod.option3,
+      mod.note
+    ])
+    .filter(Boolean);
+
+  return [
+    build?.title,
+    build?.summary,
+    build?.description,
+    build?.author_name,
+    ...visibleTags(build?.tags),
+    ...modText
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase()
+    .replace(/\s+/g, "");
+}
+
+function buildMatchesCategory(build, slots, modMap, primary, lifeSecondary = "전체") {
+  if (primary === "전체" || primary === "인기") return true;
+
+  const corpus = buildCategoryCorpus(build, slots, modMap);
+
+  if (primary === "무법지대") {
+    return corpus.includes("무법지대") || corpus.includes("무법");
   }
-  return [...BASE_CATEGORIES, ...tags];
+
+  if (primary === "체력") {
+    return corpus.includes("체력") || corpus.includes("생명력") || corpus.includes("최대체력");
+  }
+
+  if (primary === "이동속도") {
+    return corpus.includes("이동속도") || corpus.includes("이속");
+  }
+
+  if (primary === "생활") {
+    const hasLifeSub = LIFE_CATEGORIES.some((name) => corpus.includes(name.toLowerCase()));
+    if (!hasLifeSub && !corpus.includes("생활")) return false;
+    if (lifeSecondary === "전체") return true;
+    return corpus.includes(String(lifeSecondary).toLowerCase());
+  }
+
+  return false;
 }
 
 function formatSigned(value, unit = "") {
@@ -314,7 +365,17 @@ function Brand() {
   );
 }
 
-function Header({ tab, setTab, user, profile, onLogin, onLogout, onCreate, onProfile }) {
+function Header({
+  tab,
+  setTab,
+  user,
+  profile,
+  adminPendingCount = 0,
+  onLogin,
+  onLogout,
+  onCreate,
+  onProfile
+}) {
   const displayName = displayProfileName(profile, user);
   return (
     <header className="topbar">
@@ -328,7 +389,12 @@ function Header({ tab, setTab, user, profile, onLogin, onLogout, onCreate, onPro
           {user && <button className={cls(tab === "presets" && "active")} onClick={() => setTab("presets")}>내 프리셋</button>}
           <button className={cls(tab === "modbooks" && "active")} onClick={() => setTab("modbooks")}>개조서</button>
           <button className={cls(tab === "reports" && "active")} onClick={() => setTab("reports")}>제보</button>
-          {profile?.is_admin && <button className={cls(tab === "admin" && "active")} onClick={() => setTab("admin")}>관리</button>}
+          {profile?.is_admin && (
+            <button className={cls("admin-nav-btn", tab === "admin" && "active")} onClick={() => setTab("admin")}>
+              관리
+              {adminPendingCount > 0 && <span>{Math.min(adminPendingCount, 99)}</span>}
+            </button>
+          )}
         </nav>
         <div className="header-actions">
           {user && <button className="btn ghost compact desktop-only" onClick={() => setTab("presets")}>★ 내 프리셋</button>}
@@ -426,17 +492,20 @@ function BuildsPage({
 }) {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("latest");
-  const categories = useMemo(() => buildCategoryList(builds), [builds]);
+  const [lifeCategory, setLifeCategory] = useState("전체");
+  const categories = useMemo(() => buildCategoryList(), []);
 
   const rows = useMemo(() => {
     let result = builds.filter((build) => {
       const hay = buildSearchText(build);
       const qOk = hay.includes(query.trim().toLowerCase());
-      const categoryOk =
-        categoryFilter === "전체" ||
-        categoryFilter === "인기" ||
-        (categoryFilter === "무법지대" && hay.includes("무법")) ||
-        visibleTags(build.tags).includes(categoryFilter);
+      const categoryOk = buildMatchesCategory(
+        build,
+        buildSlotsMap[build.id] || [],
+        modMap,
+        categoryFilter,
+        lifeCategory
+      );
       return qOk && categoryOk;
     });
 
@@ -451,7 +520,7 @@ function BuildsPage({
       return new Date(b.created_at) - new Date(a.created_at);
     });
     return result;
-  }, [builds, query, sort, categoryFilter]);
+  }, [builds, query, sort, categoryFilter, lifeCategory, buildSlotsMap, modMap]);
 
   return (
     <section className="shell section" id="build-archive">
@@ -469,12 +538,29 @@ function BuildsPage({
           <button
             key={category}
             className={cls(categoryFilter === category && "active")}
-            onClick={() => setCategoryFilter(category)}
+            onClick={() => {
+              setCategoryFilter(category);
+              if (category !== "생활") setLifeCategory("전체");
+            }}
           >
             {category}
           </button>
         ))}
       </div>
+
+      {categoryFilter === "생활" && (
+        <div className="subcategory-strip" aria-label="생활 세부 카테고리">
+          {["전체", ...LIFE_CATEGORIES].map((category) => (
+            <button
+              key={category}
+              className={cls(lifeCategory === category && "active")}
+              onClick={() => setLifeCategory(category)}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="toolbar build-toolbar">
         <div className="searchbox">
@@ -538,13 +624,100 @@ function PresetsPage({ user, builds, buildSlotsMap, modMap, favorites, onOpen, o
   );
 }
 
-function NoticesPage({ announcements }) {
+function NoticesPage({
+  announcements,
+  profile,
+  pendingNicknameCount = 0,
+  onAnnouncementSave,
+  onAnnouncementDelete,
+  onOpenNicknameAdmin
+}) {
+  const [form, setForm] = useState({ title: "", body: "", is_pinned: false });
+  const [saving, setSaving] = useState(false);
+
+  const submit = async () => {
+    if (!form.title.trim() || !form.body.trim()) return;
+    setSaving(true);
+    await onAnnouncementSave(form);
+    setForm({ title: "", body: "", is_pinned: false });
+    setSaving(false);
+  };
+
   return (
-    <section className="shell section">
-      <div className="section-head"><div><div className="eyebrow">AXE HUB NOTICE</div><h2>공지사항</h2><p>변경사항, 이용 안내, 데이터 업데이트 소식을 간단하게 확인할 수 있습니다.</p></div></div>
-      <div className="notice-list">
-        {announcements.map((notice) => <article className={cls("notice-card", notice.is_pinned && "pinned")} key={notice.id}><div><span>{notice.is_pinned ? "PINNED" : "NOTICE"}</span><time>{fmtDate(notice.created_at)}</time></div><h3>{notice.title}</h3><p>{notice.body}</p></article>)}
+    <section className="shell section notices-page-v113">
+      <div className="section-head">
+        <div>
+          <div className="eyebrow">AXE HUB NOTICE</div>
+          <h2>공지사항</h2>
+          <p>변경사항, 이용 안내, 데이터 업데이트 소식을 확인할 수 있습니다.</p>
+        </div>
+
+        {profile?.is_admin && (
+          <button className="nickname-admin-shortcut" onClick={onOpenNicknameAdmin}>
+            닉네임 승인
+            <span>{pendingNicknameCount}</span>
+          </button>
+        )}
       </div>
+
+      {profile?.is_admin && (
+        <section className="notice-compose-v113">
+          <div className="notice-compose-head">
+            <div>
+              <span>ADMIN NOTICE</span>
+              <strong>공지사항 작성</strong>
+            </div>
+            <label>
+              <input
+                type="checkbox"
+                checked={form.is_pinned}
+                onChange={(e) => setForm((prev) => ({ ...prev, is_pinned: e.target.checked }))}
+              />
+              상단 고정
+            </label>
+          </div>
+
+          <input
+            value={form.title}
+            onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
+            placeholder="공지 제목"
+            maxLength={120}
+          />
+          <textarea
+            value={form.body}
+            onChange={(e) => setForm((prev) => ({ ...prev, body: e.target.value }))}
+            placeholder="변경사항 또는 안내할 내용을 입력하세요."
+            maxLength={3000}
+          />
+          <div className="notice-compose-actions">
+            <small>관리자만 작성할 수 있습니다.</small>
+            <button className="btn primary" onClick={submit} disabled={saving}>
+              {saving ? "등록 중..." : "공지 등록"}
+            </button>
+          </div>
+        </section>
+      )}
+
+      <div className="notice-list">
+        {announcements.map((notice) => (
+          <article className={cls("notice-card", notice.is_pinned && "pinned")} key={notice.id}>
+            <div>
+              <span>{notice.is_pinned ? "PINNED" : "NOTICE"}</span>
+              <div className="notice-card-tools">
+                <time>{fmtDate(notice.created_at)}</time>
+                {profile?.is_admin && (
+                  <button className="text-danger" onClick={() => onAnnouncementDelete(notice)}>
+                    삭제
+                  </button>
+                )}
+              </div>
+            </div>
+            <h3>{notice.title}</h3>
+            <p>{notice.body}</p>
+          </article>
+        ))}
+      </div>
+
       {!announcements.length && <div className="empty">등록된 공지가 없습니다.</div>}
     </section>
   );
@@ -714,13 +887,18 @@ function AdminPage({
   reports,
   nicknameRequests,
   announcements,
+  initialMode = "nicknames",
   onApprove,
   onReject,
   onNicknameReview,
   onAnnouncementSave,
   onAnnouncementDelete
 }) {
-  const [mode, setMode] = useState("reports");
+  const [mode, setMode] = useState(initialMode);
+
+  useEffect(() => {
+    setMode(initialMode);
+  }, [initialMode]);
   const [noticeForm, setNoticeForm] = useState({ title: "", body: "", is_pinned: false });
   if (!profile?.is_admin) return <section className="shell section"><div className="empty">관리자 권한이 없습니다.</div></section>;
   const pending = reports.filter((r) => r.status === "pending");
@@ -740,7 +918,7 @@ function AdminPage({
       </div>
       {mode === "reports" && <div className="admin-list">{pending.map((r) => <article className="admin-card" key={r.id}><div className="admin-card-head"><div><span className="status pending">pending</span><h3>{r.name}</h3></div><span>{r.mod_type} · {r.category || "기타"}</span></div><dl><div><dt>부위</dt><dd>{r.parts || "-"}</dd></div><div><dt>옵션</dt><dd className="preline">{r.options_text || "-"}</dd></div><div><dt>메모</dt><dd>{r.note || "-"}</dd></div></dl><div className="admin-actions"><button className="btn ghost" onClick={() => onReject(r)}>반려</button><button className="btn primary" onClick={() => onApprove(r)}>승인</button></div></article>)}</div>}
       {mode === "reports" && !pending.length && <div className="empty">대기 중인 개조서 제보가 없습니다.</div>}
-      {mode === "nicknames" && <div className="admin-list">{pendingNames.map((r) => <article className="admin-card nickname-admin-card" key={r.id}><div className="admin-card-head"><div><span className="status pending">pending</span><h3>{r.current_name || "Discord 사용자"} <span className="nickname-arrow">→</span> {r.requested_name}</h3></div><span>{fmtDate(r.created_at)}</span></div><p>신청자 UUID · {r.user_id}</p><div className="admin-actions"><button className="btn ghost" onClick={() => onNicknameReview(r, false)}>반려</button><button className="btn primary" onClick={() => onNicknameReview(r, true)}>승인</button></div></article>)}</div>}
+      {mode === "nicknames" && <div className="admin-list">{pendingNames.map((r) => <article className="admin-card nickname-admin-card" key={r.id}><div className="admin-card-head"><div><span className="status pending">pending</span><h3>{r.current_name || "Discord 사용자"} <span className="nickname-arrow">→</span> {r.requested_name}</h3></div><span>{fmtDate(r.created_at)}</span></div><p className="nickname-review-explain">승인하면 이후 추천세팅·댓글·제보에서 이 닉네임이 표시됩니다.</p><div className="admin-actions"><button className="btn ghost" onClick={() => onNicknameReview(r, false)}>반려</button><button className="btn primary" onClick={() => onNicknameReview(r, true)}>승인</button></div></article>)}</div>}
       {mode === "nicknames" && !pendingNames.length && <div className="empty">대기 중인 닉네임 신청이 없습니다.</div>}
       {mode === "notices" && <><div className="notice-admin-form"><input value={noticeForm.title} onChange={(e) => setNoticeForm((p) => ({ ...p, title: e.target.value }))} placeholder="공지 제목" /><textarea value={noticeForm.body} onChange={(e) => setNoticeForm((p) => ({ ...p, body: e.target.value }))} placeholder="공지 내용" /><label><input type="checkbox" checked={noticeForm.is_pinned} onChange={(e) => setNoticeForm((p) => ({ ...p, is_pinned: e.target.checked }))} /> 상단 고정</label><button className="btn primary" onClick={saveNotice}>공지 등록</button></div><div className="notice-list admin-notice-list">{announcements.map((n) => <article className="notice-card" key={n.id}><div><span>{n.is_pinned ? "PINNED" : "NOTICE"}</span><button className="text-danger" onClick={() => onAnnouncementDelete(n)}>삭제</button></div><h3>{n.title}</h3><p>{n.body}</p></article>)}</div></>}
     </section>
@@ -1399,7 +1577,7 @@ function BuildEditor({
           <input
             value={form.tags}
             onChange={(e) => setField("tags", e.target.value)}
-            placeholder="무법지대, 이동속도, 밸런스 (쉼표 구분)"
+            placeholder="무법지대, 체력, 이동속도, 생활, 벌목, 낚시, 채광, 택배 (쉼표 구분)"
           />
         </label>
         <label className="full">
@@ -1631,6 +1809,7 @@ export default function App() {
   const [reportEditor, setReportEditor] = useState(false);
   const [profileModal, setProfileModal] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState("전체");
+  const [adminMode, setAdminMode] = useState("nicknames");
   const [toast, setToast] = useState({ message: "", tone: "default" });
 
   const modMap = useMemo(() => new Map(modbooks.map((m) => [m.id, m])), [modbooks]);
@@ -1927,6 +2106,10 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`}</pre>
         setTab={setTab}
         user={user}
         profile={profile}
+        adminPendingCount={
+          adminNicknameRequests.filter((r) => r.status === "pending").length +
+          adminReports.filter((r) => r.status === "pending").length
+        }
         onLogin={login}
         onLogout={logout}
         onCreate={() => setEditor({ build: null, slots: [], mode: "create" })}
@@ -1943,8 +2126,33 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`}</pre>
       {tab === "presets" && <PresetsPage user={user} builds={builds} buildSlotsMap={buildSlotsMap} modMap={modMap} favorites={favorites} onOpen={openBuild} onFavorite={toggleFavorite} onLogin={login} />}
       {tab === "modbooks" && <ModbooksPage modbooks={modbooks} />}
       {tab === "reports" && <ReportsPage user={user} myReports={myReports} onNewReport={() => setReportEditor(true)} onLogin={login} />}
-      {tab === "notices" && <NoticesPage announcements={announcements} />}
-      {tab === "admin" && <AdminPage profile={profile} reports={adminReports} nicknameRequests={adminNicknameRequests} announcements={announcements} onApprove={approve} onReject={reject} onNicknameReview={reviewNickname} onAnnouncementSave={saveAnnouncement} onAnnouncementDelete={deleteAnnouncement} />}
+      {tab === "notices" && (
+        <NoticesPage
+          announcements={announcements}
+          profile={profile}
+          pendingNicknameCount={adminNicknameRequests.filter((r) => r.status === "pending").length}
+          onAnnouncementSave={saveAnnouncement}
+          onAnnouncementDelete={deleteAnnouncement}
+          onOpenNicknameAdmin={() => {
+            setAdminMode("nicknames");
+            setTab("admin");
+          }}
+        />
+      )}
+      {tab === "admin" && (
+        <AdminPage
+          profile={profile}
+          reports={adminReports}
+          nicknameRequests={adminNicknameRequests}
+          announcements={announcements}
+          initialMode={adminMode}
+          onApprove={approve}
+          onReject={reject}
+          onNicknameReview={reviewNickname}
+          onAnnouncementSave={saveAnnouncement}
+          onAnnouncementDelete={deleteAnnouncement}
+        />
+      )}
 
       <footer className="footer">
         <div className="shell">

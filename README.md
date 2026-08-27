@@ -1,4 +1,4 @@
-# AXE BUILD v1.1.2 · AXE HUB
+# AXE BUILD v1.1.3 · AXE HUB
 
 외부 공개용 추천세팅 / 개조서 / 제보 서비스입니다.
 
@@ -64,3 +64,9 @@ DB 스키마 변경 없이 기존 AXE HUB Supabase를 그대로 사용합니다.
 
 특히 AXE NET v1.46.4에서 해결된 `tooltip pointer-events:none` hover 안정화
 방식까지 그대로 반영했습니다.
+
+
+## V1.1.3
+
+고정형 카테고리와 생활 2차 카테고리, 공지 직접 작성,
+닉네임 승인 바로가기, 컨텐츠 옆 도킹 리모컨을 반영했습니다.

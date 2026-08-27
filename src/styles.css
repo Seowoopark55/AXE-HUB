@@ -2564,3 +2564,205 @@ select:focus,input:focus,textarea:focus{border-color:rgba(247,183,51,.65);box-sh
     bottom:72px!important;
   }
 }
+
+
+/* =========================================================
+   AXE BUILD v1.1.3
+   category hierarchy / direct admin notice tools /
+   remote docked beside main content
+   ========================================================= */
+
+.category-strip{
+  gap:7px!important;
+}
+.category-strip button{
+  min-width:74px;
+  justify-content:center;
+}
+.subcategory-strip{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin:-4px 0 14px;
+  padding:10px 12px;
+  border:1px solid rgba(255,181,46,.12);
+  border-radius:12px;
+  background:linear-gradient(90deg,rgba(255,181,46,.035),rgba(255,255,255,.008));
+}
+.subcategory-strip:before{
+  content:"생활 세부";
+  display:flex;
+  align-items:center;
+  margin-right:4px;
+  color:#7e7461;
+  font-size:8px;
+  font-weight:950;
+  letter-spacing:.08em;
+}
+.subcategory-strip button{
+  min-height:30px;
+  padding:0 11px;
+  border:1px solid #29292e;
+  border-radius:999px;
+  background:#111315;
+  color:#8f949a;
+  font-size:10px;
+  font-weight:850;
+  cursor:pointer;
+}
+.subcategory-strip button:hover,
+.subcategory-strip button.active{
+  color:#f0c15e;
+  border-color:rgba(255,181,46,.32);
+  background:rgba(255,181,46,.055);
+}
+
+.admin-nav-btn{
+  display:flex!important;
+  align-items:center;
+  gap:5px;
+}
+.admin-nav-btn>span{
+  min-width:17px;
+  height:17px;
+  display:grid;
+  place-items:center;
+  padding:0 4px;
+  border-radius:999px;
+  color:#17120a;
+  background:var(--gold);
+  font-size:8px;
+  font-weight:1000;
+}
+
+.nickname-admin-shortcut{
+  min-height:38px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:0 12px;
+  border:1px solid rgba(255,181,46,.24);
+  border-radius:10px;
+  color:#d8d9dc;
+  background:rgba(255,181,46,.035);
+  font-size:11px;
+  font-weight:900;
+  cursor:pointer;
+}
+.nickname-admin-shortcut span{
+  min-width:22px;
+  height:22px;
+  display:grid;
+  place-items:center;
+  border-radius:7px;
+  color:#17120a;
+  background:var(--gold);
+  font-size:9px;
+}
+.notice-compose-v113{
+  margin-bottom:18px;
+  padding:16px;
+  border:1px solid rgba(255,181,46,.18);
+  border-radius:15px;
+  background:
+    linear-gradient(135deg,rgba(255,181,46,.045),transparent 40%),
+    #101214;
+  display:grid;
+  gap:9px;
+}
+.notice-compose-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+}
+.notice-compose-head>div{
+  display:grid;
+  gap:2px;
+}
+.notice-compose-head span{
+  color:#9f7c40;
+  font-size:8px;
+  font-weight:950;
+  letter-spacing:.12em;
+}
+.notice-compose-head strong{
+  color:#eeece7;
+  font-size:15px;
+}
+.notice-compose-head label{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  color:#8c9197;
+  font-size:10px;
+}
+.notice-compose-v113>input,
+.notice-compose-v113>textarea{
+  width:100%;
+  padding:11px 12px;
+  border:1px solid #2a2d31;
+  border-radius:9px;
+  color:#e4e5e7;
+  background:#0b0d10;
+}
+.notice-compose-v113>textarea{
+  min-height:112px;
+  resize:vertical;
+  line-height:1.6;
+}
+.notice-compose-actions{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.notice-compose-actions small{
+  color:#686d73;
+  font-size:9px;
+}
+.notice-card-tools{
+  display:flex;
+  align-items:center;
+  gap:9px;
+}
+.nickname-review-explain{
+  margin:10px 0 0!important;
+  color:#898e94!important;
+  font-size:10px!important;
+  line-height:1.55;
+}
+
+/* Move the remote next to the centered 1180px content instead of the monitor edge. */
+.floating-remote-v112{
+  right:max(8px,calc((100vw - 1180px) / 2 - 142px))!important;
+}
+
+@media(max-width:1500px) and (min-width:681px){
+  .floating-remote-v112{
+    width:112px!important;
+    right:8px!important;
+  }
+  .remote-menu-v112 b{
+    font-size:11px!important;
+  }
+  .remote-recruit-head>strong{
+    font-size:10px!important;
+  }
+}
+
+@media(max-width:680px){
+  .subcategory-strip{
+    overflow-x:auto;
+    flex-wrap:nowrap;
+    padding:8px;
+  }
+  .subcategory-strip:before,
+  .subcategory-strip button{
+    flex:0 0 auto;
+  }
+  .notice-compose-head{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+}
