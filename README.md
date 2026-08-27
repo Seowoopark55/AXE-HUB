@@ -1,4 +1,4 @@
-# AXE BUILD v1.0.2 · AXE HUB
+# AXE BUILD v1.0.3 · AXE HUB
 
 외부 공개용 추천세팅 / 개조서 / 제보 서비스입니다.
 
@@ -29,3 +29,9 @@ VITE_AXE_CONTACT_URL=
 ```
 
 **DB SQL 변경 없음.** 기존 AXE HUB Supabase를 그대로 사용합니다.
+
+
+## V1.0.3
+
+실제 AXE 회사 브랜딩과 팀복 이미지를 사이트 전반에 반영했습니다.
+DB 스키마 변경 없이 기존 AXE HUB Supabase를 그대로 사용합니다.

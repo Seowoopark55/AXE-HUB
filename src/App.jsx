@@ -2,10 +2,10 @@ import React, { useEffect, useMemo, useState } from "react";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
 
 const SLOT_META = [
-  { key: "outer", label: "겉옷", icon: "01", keywords: ["겉옷", "단독상의"] },
-  { key: "top", label: "상의", icon: "02", keywords: ["상의"] },
-  { key: "bottom", label: "하의", icon: "03", keywords: ["하의"] },
-  { key: "shoes", label: "신발", icon: "04", keywords: ["신발"] }
+  { key: "outer", label: "겉옷", icon: "01", image: "/assets/equipment/outer-team.webp", keywords: ["겉옷", "단독상의"] },
+  { key: "top", label: "상의", icon: "02", image: "/assets/equipment/top-team.webp", keywords: ["상의"] },
+  { key: "bottom", label: "하의", icon: "03", image: "/assets/equipment/bottom-team.webp", keywords: ["하의"] },
+  { key: "shoes", label: "신발", icon: "04", image: "/assets/equipment/shoes-team.webp", keywords: ["신발"] }
 ];
 
 const BASE_CATEGORIES = ["전체", "인기", "무법지대"];
@@ -159,15 +159,10 @@ function Modal({ title, children, onClose, wide = false }) {
 }
 
 function Brand() {
-  const [logoFailed, setLogoFailed] = useState(false);
   return (
     <div className="brand">
       <div className="brand-mark brand-logo-box">
-        {!logoFailed ? (
-          <img src="/assets/axe-logo.png" alt="AXE 로고" onError={() => setLogoFailed(true)} />
-        ) : (
-          <span className="brand-fallback">AXE</span>
-        )}
+        <img src="/assets/axe-logo.png" alt="AXE 로고" />
       </div>
       <div>
         <strong>AXE BUILD</strong>
@@ -254,11 +249,44 @@ function CompanyPromo() {
     <section className="shell company-promo-wrap">
       <div className="company-promo">
         <div className="company-promo-copy">
-          <span>AXE COMPANY · RECRUITMENT</span>
-          <strong>함께 뛰고, 함께 성장하는 AXE.</strong>
-          <p>AXE의 플레이와 분위기가 궁금하다면 회사 소개와 모집 안내를 확인해보세요.</p>
+          <span>AXE COMPANY</span>
+          <strong>놀 땐 놀고, 일할 땐 하는 회사.</strong>
+          <p>AXE BUILD는 회사 밖에서도 세팅 정보를 편하게 공유하기 위한 공개 허브입니다.</p>
         </div>
-        {contact && <a className="btn primary compact" href={contact} target="_blank" rel="noreferrer">AXE 문의</a>}
+        {contact && (
+          <a className="btn primary compact" href={contact} target="_blank" rel="noreferrer">
+            AXE 문의
+          </a>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function RecruitmentPanel() {
+  const contact = String(import.meta.env.VITE_AXE_CONTACT_URL || "").trim();
+  return (
+    <section className="shell recruitment-section">
+      <div className="recruitment-copy">
+        <div className="eyebrow gold">AXE RECRUITMENT</div>
+        <h3>같이 놀고, 같이 움직일 사람을 기다립니다.</h3>
+        <p>
+          편하게 지낼 수 있지만 할 때는 제대로 하는 분위기.
+          AXE가 어떤 회사인지 궁금하다면 모집 포스터를 확인해보세요.
+        </p>
+        <div className="recruitment-points">
+          <span>총싸움 좋아하는 분</span>
+          <span>일 열심히 하는 분</span>
+          <span>사람 좋고 의리 있는 분</span>
+        </div>
+        {contact && (
+          <a className="btn primary" href={contact} target="_blank" rel="noreferrer">
+            문의 · 지원하기
+          </a>
+        )}
+      </div>
+      <div className="recruitment-poster-frame">
+        <img src="/assets/axe-recruitment-poster.png" alt="AXE 신규 인원 모집 포스터" />
       </div>
     </section>
   );
@@ -286,10 +314,16 @@ function BuildCard({ build, slots, modMap, onOpen, favorite, onFavorite }) {
           const slot = (slots || []).find((v) => v.slot_key === meta.key);
           return (
             <div className="mini-slot" key={meta.key}>
-              <div className="mini-slot-label"><span>{meta.icon}</span><strong>{meta.label}</strong></div>
-              <div className="mini-slot-values">
-                <span><em>접두</em>{modName(slot?.prefix_modbook_id)}</span>
-                <span><em>접미</em>{modName(slot?.suffix_modbook_id)}</span>
+              <div className="mini-slot-visual">
+                <img src={meta.image} alt="" />
+                <span>{meta.icon}</span>
+              </div>
+              <div className="mini-slot-body">
+                <div className="mini-slot-label"><strong>{meta.label}</strong></div>
+                <div className="mini-slot-values">
+                  <span><em>접두</em>{modName(slot?.prefix_modbook_id)}</span>
+                  <span><em>접미</em>{modName(slot?.suffix_modbook_id)}</span>
+                </div>
               </div>
             </div>
           );
@@ -585,8 +619,8 @@ function BuildDetail({ build, slots, modMap, favorite, user, onFavorite, onClose
               return (
                 <article className="equipment-item" key={meta.key}>
                   <div className="equipment-visual">
+                    <img className="equipment-image" src={meta.image} alt={`${meta.label} AXE 팀복`} />
                     <span className="equipment-code">{meta.icon}</span>
-                    <strong>{meta.label}</strong>
                     <small>{meta.key.toUpperCase()}</small>
                   </div>
                   <div className="equipment-name">{meta.label}</div>
@@ -780,7 +814,10 @@ function BuildEditor({ user, profile, modbooks, initialBuild, initialSlots, onCl
         {SLOT_META.map((meta) => (
           <section className="legacy-slot-editor" key={meta.key}>
             <div className="legacy-slot-head">
-              <div className="slot-thumb"><span>{meta.icon}</span></div>
+              <div className="slot-thumb">
+                <img src={meta.image} alt={`${meta.label} AXE 팀복`} />
+                <span>{meta.icon}</span>
+              </div>
               <div><small>장비 부위</small><strong>{meta.label}</strong><span>접두·접미 개조서를 선택합니다.</span></div>
             </div>
             <ModifierPicker type="접두" slotMeta={meta} modbooks={modbooks} value={slots[meta.key].prefix_modbook_id} onChange={(v) => setSlot(meta.key, "prefix_modbook_id", v)} />
@@ -1167,6 +1204,7 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`}</pre>
             categoryFilter={categoryFilter}
             setCategoryFilter={setCategoryFilter}
           />
+          <RecruitmentPanel />
         </>
       )}
       {tab === "modbooks" && <ModbooksPage modbooks={modbooks} />}

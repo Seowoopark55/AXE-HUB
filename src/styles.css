@@ -395,3 +395,324 @@ select:focus,input:focus,textarea:focus{border-color:rgba(247,183,51,.65);box-sh
 .editor-standard span{font-size:8px;color:#77777e}
 @media(max-width:880px){.legacy-build-layout{grid-template-columns:1fr}.legacy-editor-grid{grid-template-columns:1fr}.company-promo{min-height:132px}.equipment-grid{grid-template-columns:1fr 1fr}}
 @media(max-width:620px){.company-promo{align-items:flex-start;flex-direction:column}.company-promo-copy>strong{font-size:20px}.legacy-build-head{flex-direction:column}.legacy-build-layout{padding:0 12px 12px}.equipment-grid{grid-template-columns:1fr}.modifier-picker-filters{grid-template-columns:1fr}.draft-banner{flex-direction:column}.legacy-editor-grid{padding:0 12px 12px}.brand-logo-box{width:40px!important;height:36px!important}}
+
+
+/* =========================================================
+   AXE BUILD v1.0.3 · REAL AXE BRAND / TEAM UNIFORM VISUALS
+   ========================================================= */
+
+/* Real company logo */
+.brand-logo-box{
+  width:66px!important;
+  height:40px!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:8px!important;
+  background:#0b0b0c!important;
+  overflow:hidden;
+  box-shadow:none!important;
+}
+.brand-logo-box img{
+  width:100%;
+  height:100%;
+  display:block;
+  object-fit:cover;
+  object-position:center 50%;
+}
+
+/* Home hero: subtle AXE brand mark, not a competing card */
+.hero-simple{
+  position:relative;
+  overflow:hidden;
+  min-height:290px;
+}
+.hero-simple:after{
+  content:"";
+  position:absolute;
+  right:-30px;
+  top:50%;
+  width:min(520px,42vw);
+  aspect-ratio:1;
+  transform:translateY(-50%);
+  background:url('/assets/axe-brand-square.png') center/cover no-repeat;
+  opacity:.13;
+  filter:saturate(.9) contrast(1.06);
+  pointer-events:none;
+  mask-image:linear-gradient(90deg,transparent 0%,#000 34%,#000 100%);
+}
+.hero-simple .hero-copy{
+  position:relative;
+  z-index:1;
+}
+
+/* Wide company banner supplied by AXE */
+.company-promo{
+  min-height:205px;
+  align-items:flex-end;
+  padding:27px 30px;
+  background-image:
+    linear-gradient(90deg,rgba(5,5,6,.98) 0%,rgba(5,5,6,.88) 34%,rgba(5,5,6,.33) 62%,rgba(5,5,6,.08) 100%),
+    url('/assets/axe-company-banner.png');
+  background-position:center;
+  background-size:cover;
+}
+.company-promo-copy{
+  max-width:620px;
+}
+.company-promo-copy>strong{
+  font-size:26px;
+}
+.company-promo-copy>p{
+  max-width:540px;
+  color:#a4a4aa;
+}
+
+/* Build cards: compact visual inventory cue */
+.mini-slot{
+  min-height:70px;
+  display:grid!important;
+  grid-template-columns:58px minmax(0,1fr);
+  gap:8px;
+  padding:7px!important;
+  align-items:center;
+}
+.mini-slot-visual{
+  height:56px;
+  position:relative;
+  overflow:hidden;
+  border-radius:8px;
+  border:1px solid #2a2a2e;
+  background:#0b0b0d;
+}
+.mini-slot-visual img{
+  width:100%;
+  height:100%;
+  display:block;
+  object-fit:contain;
+}
+.mini-slot-visual>span{
+  position:absolute;
+  left:4px;
+  top:4px;
+  min-width:18px;
+  height:16px;
+  padding:0 4px;
+  border-radius:5px;
+  display:grid;
+  place-items:center;
+  background:rgba(8,8,9,.78);
+  border:1px solid rgba(247,183,51,.28);
+  color:var(--gold);
+  font-size:7px;
+  font-weight:1000;
+}
+.mini-slot-body{min-width:0}
+.mini-slot-label{
+  margin:0 0 5px!important;
+}
+.mini-slot-label strong{
+  font-size:10px!important;
+}
+
+/* Build detail: internal-style real equipment slots */
+.equipment-visual{
+  height:158px;
+  display:block!important;
+  background:
+    radial-gradient(circle at 50% 44%,rgba(247,183,51,.09),transparent 58%),
+    linear-gradient(180deg,#101012,#0a0a0c)!important;
+}
+.equipment-visual:before{
+  display:none!important;
+}
+.equipment-image{
+  position:absolute;
+  inset:7px;
+  width:calc(100% - 14px);
+  height:calc(100% - 14px);
+  object-fit:contain;
+  z-index:1;
+  filter:drop-shadow(0 10px 16px rgba(0,0,0,.35));
+}
+.equipment-visual .equipment-code{
+  position:absolute!important;
+  top:7px;
+  right:7px;
+  z-index:3!important;
+  min-width:25px;
+  height:20px;
+  display:grid;
+  place-items:center;
+  border-radius:6px;
+  background:rgba(7,7,8,.82);
+  border:1px solid rgba(247,183,51,.32);
+  color:var(--gold)!important;
+}
+.equipment-visual small{
+  position:absolute!important;
+  left:7px;
+  bottom:7px;
+  z-index:3!important;
+  padding:4px 6px;
+  border-radius:5px;
+  background:rgba(7,7,8,.82);
+  color:#85858c!important;
+}
+
+/* Editor slot thumbnails use the same team uniform */
+.slot-thumb{
+  width:58px!important;
+  height:58px!important;
+  position:relative;
+  overflow:hidden;
+  padding:3px;
+  background:#0b0b0d!important;
+}
+.slot-thumb img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  display:block;
+}
+.slot-thumb span{
+  position:absolute;
+  top:3px;
+  right:3px;
+  min-width:19px;
+  height:17px;
+  padding:0 4px;
+  border-radius:5px;
+  display:grid;
+  place-items:center;
+  background:rgba(7,7,8,.82);
+  border:1px solid rgba(247,183,51,.28);
+  font-size:7px!important;
+}
+
+/* Recruitment section: real AXE poster, placed after build list */
+.recruitment-section{
+  margin:18px auto 70px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(300px,390px);
+  min-height:390px;
+  border:1px solid rgba(247,183,51,.18);
+  border-radius:20px;
+  overflow:hidden;
+  background:
+    linear-gradient(135deg,rgba(247,183,51,.055),transparent 34%),
+    #101012;
+}
+.recruitment-copy{
+  padding:38px 40px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:flex-start;
+}
+.recruitment-copy h3{
+  margin:10px 0 12px;
+  font-size:31px;
+  line-height:1.18;
+  letter-spacing:-.04em;
+  max-width:560px;
+}
+.recruitment-copy p{
+  max-width:570px;
+  margin:0;
+  color:#929299;
+  font-size:12px;
+  line-height:1.8;
+}
+.recruitment-points{
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+  margin:22px 0;
+}
+.recruitment-points span{
+  padding:8px 10px;
+  border-radius:999px;
+  border:1px solid #2c2c31;
+  background:#0c0c0e;
+  color:#b5b5bb;
+  font-size:9px;
+  font-weight:850;
+}
+.recruitment-poster-frame{
+  position:relative;
+  min-height:390px;
+  background:#09090a;
+  border-left:1px solid #29292d;
+}
+.recruitment-poster-frame:before{
+  content:"";
+  position:absolute;
+  inset:0;
+  box-shadow:inset 50px 0 70px rgba(10,10,11,.82);
+  pointer-events:none;
+  z-index:2;
+}
+.recruitment-poster-frame img{
+  width:100%;
+  height:100%;
+  position:absolute;
+  inset:0;
+  object-fit:cover;
+  object-position:center 18%;
+  display:block;
+}
+
+/* Slightly richer footer using supplied corporate visual */
+.footer{
+  position:relative;
+  overflow:hidden;
+}
+.footer:after{
+  content:"";
+  position:absolute;
+  right:-10px;
+  top:50%;
+  transform:translateY(-50%);
+  width:260px;
+  height:120px;
+  background:url('/assets/axe-logo.png') center/cover no-repeat;
+  opacity:.045;
+  pointer-events:none;
+}
+
+@media(max-width:880px){
+  .hero-simple:after{width:520px;right:-170px;opacity:.09}
+  .company-promo{min-height:180px}
+  .recruitment-section{grid-template-columns:1fr minmax(260px,330px)}
+  .recruitment-copy{padding:30px}
+  .recruitment-copy h3{font-size:26px}
+}
+
+@media(max-width:620px){
+  .brand-logo-box{width:54px!important;height:34px!important}
+  .hero-simple{min-height:0}
+  .hero-simple:after{width:420px;right:-230px;opacity:.065}
+  .company-promo{
+    min-height:180px;
+    padding:22px;
+    background-position:62% center;
+  }
+  .company-promo-copy>strong{font-size:21px}
+  .mini-slot{grid-template-columns:52px minmax(0,1fr)}
+  .mini-slot-visual{height:50px}
+  .equipment-visual{height:170px}
+  .recruitment-section{
+    grid-template-columns:1fr;
+    margin-bottom:45px;
+  }
+  .recruitment-copy{padding:26px 22px}
+  .recruitment-copy h3{font-size:24px}
+  .recruitment-poster-frame{
+    min-height:430px;
+    border-left:0;
+    border-top:1px solid #29292d;
+  }
+  .recruitment-poster-frame:before{
+    box-shadow:inset 0 45px 70px rgba(10,10,11,.58);
+  }
+}

@@ -1,0 +1,32 @@
+AXE HUB · AXE BUILD V1.0.3
+=================================
+
+이번 버전은 실제 AXE 브랜딩/팀복 리소스 반영 버전입니다.
+
+반영:
+- 상단 임시 A 마크 제거 → 실제 AXE 로고 이미지
+- 메인 히어로 우측에 AXE 로고 워터마크
+- 메인 회사 홍보 배너에 실제 AXE 회사 배너 적용
+- 추천세팅 카드의 각 장비 부위에 AXE 팀복 이미지 표시
+- 추천세팅 상세 인벤토리에 겉옷/상의/하의/신발 팀복 실이미지 표시
+- 추천세팅 작성 슬롯 헤더에도 팀복 이미지 표시
+- 추천세팅 목록 아래에 실제 AXE 신규 인원 모집 포스터 섹션 추가
+- 푸터에 AXE 로고를 약하게 브랜딩 요소로 사용
+
+사용 자산:
+public/assets/axe-logo.png
+public/assets/axe-company-banner.png
+public/assets/axe-brand-square.png
+public/assets/axe-recruitment-poster.png
+public/assets/equipment/outer-team.webp
+public/assets/equipment/top-team.webp
+public/assets/equipment/bottom-team.webp
+public/assets/equipment/shoes-team.webp
+
+DB / Supabase SQL 변경 없음.
+
+적용:
+1. 기존 GitHub 저장소에 ZIP 내용 전체 덮어쓰기
+2. .env.local은 유지하고 GitHub에는 업로드하지 않음
+3. Commit → Push
+4. Vercel 자동 배포 확인
