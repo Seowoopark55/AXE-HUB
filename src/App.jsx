@@ -863,34 +863,26 @@ function FloatingContextPanel({
 }
 
 function RecruitPosterModal({ onClose }) {
-  const contact = String(import.meta.env.VITE_AXE_CONTACT_URL || "").trim();
-
   return (
     <Modal
       title="AXE 신규 인원 모집"
       onClose={onClose}
-      className="recruit-poster-modal-v117"
+      bare
+      className="recruit-poster-modal-v118"
     >
-      <div className="recruit-poster-modal-v117__body">
+      <div className="recruit-poster-only-v118">
+        <button
+          className="recruit-poster-close-v118"
+          type="button"
+          onClick={onClose}
+          aria-label="모집 안내 닫기"
+        >
+          ×
+        </button>
         <img
-          className="recruit-poster-modal-v117__image"
           src="/assets/axe-recruitment-poster.png"
           alt="AXE 신규 인원 모집 포스터"
         />
-
-        <div className="recruit-poster-modal-v117__actions">
-          <span>총싸움 · 성실함 · 의리</span>
-          <div>
-            {contact && (
-              <a className="btn primary" href={contact} target="_blank" rel="noreferrer">
-                DM 문의
-              </a>
-            )}
-            <button className="btn ghost" type="button" onClick={onClose}>
-              닫기
-            </button>
-          </div>
-        </div>
       </div>
     </Modal>
   );
@@ -1077,7 +1069,7 @@ function BuildDetail({
 }) {
   const [commentText, setCommentText] = useState("");
   const [commentBusy, setCommentBusy] = useState(false);
-  const [selectedSlotKey, setSelectedSlotKey] = useState("bottom");
+  const [selectedSlotKey, setSelectedSlotKey] = useState("outer");
 
   const tags = visibleTags(build.tags);
   const summary = summarizePresetExact(slots, modMap);
@@ -1148,7 +1140,7 @@ function BuildDetail({
     );
   };
 
-  const PresetTooltip = ({ slotKey, mobile = false }) => {
+  const PresetTooltip = ({ slotKey, mobile = false, inspector = false }) => {
     const meta = SLOT_META.find((item) => item.key === slotKey);
     const slot = getSlot(slotKey);
     const mods = getMods(slot);
@@ -1159,9 +1151,10 @@ function BuildDetail({
         className={cls(
           "ops-info-preset-tooltip",
           `ops-info-preset-tooltip--${slotKey}`,
-          mobile && "is-mobile"
+          mobile && "is-mobile",
+          inspector && "is-inspector"
         )}
-        role={mobile ? "region" : "tooltip"}
+        role={mobile || inspector ? "region" : "tooltip"}
       >
         <div className="ops-info-preset-tooltip__head">
           <div>
@@ -1195,28 +1188,24 @@ function BuildDetail({
     const selected = selectedSlotKey === slotKey;
 
     return (
-      <div
+      <button
         className={cls(
-          "ops-info-preset-slot-wrap",
-          `ops-info-preset-slot-wrap--${slotKey}`,
+          "hub-gear-card-v118",
+          `hub-gear-card-v118--${slotKey}`,
           selected && "is-selected"
         )}
+        type="button"
+        onMouseEnter={() => setSelectedSlotKey(slotKey)}
+        onFocus={() => setSelectedSlotKey(slotKey)}
+        onClick={() => setSelectedSlotKey(slotKey)}
+        aria-label={`${meta?.label || slotKey} 추천 개조서`}
       >
-        <button
-          className={cls("ops-info-preset-slot", selected && "is-selected")}
-          type="button"
-          onClick={() => setSelectedSlotKey(slotKey)}
-          aria-label={`${meta?.label || slotKey} 추천 개조서`}
-        >
-          <span className="ops-info-preset-slot__frame">
-            <img src={meta?.image} alt="" loading="lazy" draggable="false" />
-          </span>
-          <span className="ops-info-preset-slot__label">{meta?.label}</span>
+        <span className="hub-gear-card-v118__frame">
+          <img src={meta?.image} alt="" loading="lazy" draggable="false" />
           {movement > 0 && <em>+{formatPresetCompactNumber(movement)}%</em>}
-        </button>
-
-        <PresetTooltip slotKey={slotKey} />
-      </div>
+        </span>
+        <span className="hub-gear-card-v118__label">{meta?.label}</span>
+      </button>
     );
   };
 
@@ -1296,10 +1285,16 @@ function BuildDetail({
                 <em>AXE BUILD</em>
               </div>
 
-              <div className="ops-info-preset-board">
-                {SLOT_META.map((meta) => (
-                  <PresetSlot slotKey={meta.key} key={meta.key} />
-                ))}
+              <div className="hub-gear-board-v118">
+                <div className="hub-gear-grid-v118">
+                  {SLOT_META.map((meta) => (
+                    <PresetSlot slotKey={meta.key} key={meta.key} />
+                  ))}
+                </div>
+
+                <div className="hub-gear-inspector-v118">
+                  <PresetTooltip slotKey={selectedSlotKey} inspector />
+                </div>
               </div>
 
               <div className="ops-info-preset-mobile-detail">
