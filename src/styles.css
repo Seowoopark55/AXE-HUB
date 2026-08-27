@@ -3116,3 +3116,90 @@ select:focus,input:focus,textarea:focus{border-color:rgba(247,183,51,.65);box-sh
     right:8px!important;
   }
 }
+
+
+/* =========================================================
+   AXE BUILD v1.1.6
+   - left remote removed
+   - right rail combines recruit + quick menu
+   - real in-game inventory background
+   ========================================================= */
+
+.floating-remote-v112{display:none !important;}
+.floating-promo-v114{display:none !important;}
+.floating-context-v115{display:none !important;}
+
+.floating-context-v116{
+  position:fixed;
+  top:50%;
+  right:24px;
+  transform:translateY(-50%);
+  z-index:67;
+  width:226px;
+  display:grid;
+  gap:10px;
+}
+.floating-context-v116__recruit,
+.floating-context-v116__menu,
+.floating-context-v116__focus{
+  border:1px solid rgba(255,181,46,.14);
+  border-radius:18px;
+  background:linear-gradient(180deg,#0f1216 0%,#0b0d10 100%);
+  box-shadow:0 22px 58px rgba(0,0,0,.32);
+}
+.floating-context-v116__recruit{
+  position:relative;
+  overflow:hidden;
+  min-height:132px;
+  padding:16px;
+  background:
+    linear-gradient(180deg,rgba(8,9,11,.32),rgba(8,9,11,.78)),
+    url('/assets/axe-company-banner.png') center/cover no-repeat,
+    #0b0d10;
+}
+.floating-context-v116__recruit::after{
+  content:'';
+  position:absolute;
+  inset:auto -28px -36px auto;
+  width:120px;
+  height:120px;
+  background:url('/assets/axe-logo.png') center/contain no-repeat;
+  opacity:.12;
+}
+.floating-context-v116__recruit-copy{position:relative;z-index:1;display:grid;gap:6px;}
+.floating-context-v116__recruit-copy span{color:var(--gold);font-size:8px;font-weight:950;letter-spacing:.14em;}
+.floating-context-v116__recruit-copy strong{color:#f3f4f5;font-size:20px;font-weight:980;line-height:1.18;letter-spacing:-.04em;}
+.floating-context-v116__recruit-copy p{color:#b9bfc6;font-size:11px;line-height:1.5;}
+.floating-context-v116__recruit-btn{position:relative;z-index:1;width:100%;min-height:38px;margin-top:13px;border:1px solid rgba(255,181,46,.26);border-radius:10px;color:#16110a;background:var(--gold);font-size:12px;font-weight:950;cursor:pointer;transition:.14s ease;}
+.floating-context-v116__recruit-btn:hover{filter:brightness(1.04);transform:translateY(-1px);}
+
+.floating-context-v116__menu{padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.floating-context-v116__menu-btn{position:relative;min-height:70px;padding:10px 10px 11px;border:1px solid rgba(255,255,255,.07);border-radius:14px;color:#c0c5cb;background:#101317;display:grid;justify-items:start;align-content:start;gap:10px;cursor:pointer;text-align:left;transition:.14s ease;}
+.floating-context-v116__menu-btn:hover{border-color:rgba(255,181,46,.28);background:#15191e;color:#f1f2f3;transform:translateY(-1px);}
+.floating-context-v116__menu-btn.is-active{border-color:rgba(255,181,46,.42);background:linear-gradient(180deg,rgba(255,181,46,.08),rgba(255,181,46,.02));color:#fff2d5;box-shadow:inset 0 0 0 1px rgba(255,181,46,.06);}
+.floating-context-v116__icon{width:32px;height:32px;border:1px solid rgba(255,181,46,.15);border-radius:10px;color:var(--gold);background:#0c0f12;display:grid;place-items:center;font-size:15px;font-weight:900;}
+.floating-context-v116__menu-btn b{font-size:12px;font-weight:950;}
+.floating-context-v116__menu-btn em{position:absolute;top:8px;right:8px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;color:#14110a;background:var(--gold);display:grid;place-items:center;font-size:10px;font-style:normal;font-weight:950;}
+
+.floating-context-v116__focus{padding:16px;border-color:rgba(255,255,255,.07);}
+.floating-context-v116__focus span{display:block;color:#c39a4c;font-size:8px;font-weight:950;letter-spacing:.14em;}
+.floating-context-v116__focus strong{display:block;margin-top:7px;color:#eef0f2;font-size:17px;font-weight:950;line-height:1.28;letter-spacing:-.03em;}
+.floating-context-v116__focus p{margin:9px 0 0;color:#9399a1;font-size:10.7px;line-height:1.64;word-break:keep-all;}
+
+.recruit-poster-modal-v116{width:min(1060px,calc(100vw - 34px))!important;}
+.recruit-poster-modal__body{display:grid;grid-template-columns:minmax(0, 1fr) 270px;gap:16px;align-items:start;}
+.recruit-poster-modal__poster{overflow:hidden;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:#0d1014;}
+.recruit-poster-modal__poster img{width:100%;display:block;}
+.recruit-poster-modal__side{display:grid;gap:10px;padding:14px;border:1px solid rgba(255,181,46,.10);border-radius:14px;background:#0d1014;}
+.recruit-poster-modal__side>span{color:var(--gold);font-size:8px;font-weight:950;letter-spacing:.14em;}
+.recruit-poster-modal__side>strong{color:#f1f2f3;font-size:20px;font-weight:980;line-height:1.2;}
+.recruit-poster-modal__side>p{color:#9aa0a7;font-size:12px;line-height:1.7;}
+.recruit-poster-modal__side ul{margin:0;padding-left:18px;color:#d6d8db;font-size:12px;line-height:1.8;}
+.recruit-poster-modal__side .btn{margin-top:4px;justify-content:center;}
+
+.ops-info-preset-board{background:linear-gradient(180deg,rgba(7,9,12,.70),rgba(7,9,12,.83)),url('/assets/axe-inventory-bg.png') center/cover no-repeat,#090b0e !important;}
+.ops-info-preset-board::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 50% 45%,rgba(255,181,46,.04),transparent 42%);}
+
+@media(max-width:1580px){.floating-context-v116{right:14px;width:214px;}}
+@media(max-width:1360px){.floating-context-v116{display:none;}}
+@media(max-width:860px){.recruit-poster-modal__body{grid-template-columns:1fr;}}
