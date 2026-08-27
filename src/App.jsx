@@ -240,19 +240,6 @@ function Hero({ user, onCreate, onJump, onPresets }) {
   );
 }
 
-function RecruitmentPanel({ onClose }) {
-  const contact = String(import.meta.env.VITE_AXE_CONTACT_URL || "").trim();
-  return (
-    <Modal title="AXE 신규 인원 모집" onClose={onClose}>
-      <div className="recruit-modal-poster"><img src="/assets/axe-recruitment-poster.png" alt="AXE 신규 인원 모집" /></div>
-      <div className="recruit-modal-copy">
-        <p>편하게 지내되 할 때는 제대로. 총싸움 좋아하고, 일 열심히 하고, 사람 좋고 의리 있는 분을 기다립니다.</p>
-        {contact && <a className="btn primary" href={contact} target="_blank" rel="noreferrer">문의 · 지원하기</a>}
-      </div>
-    </Modal>
-  );
-}
-
 function BuildCard({ build, slots, modMap, onOpen, favorite, onFavorite }) {
   const modName = (id) => modMap.get(id)?.name || "미지정";
   const tags = visibleTags(build.tags).slice(0, 3);
@@ -435,14 +422,44 @@ function NoticesPage({ announcements }) {
   );
 }
 
-function FloatingRemote({ user, announcements, onRecruit, onNotice, onReport, onPreset }) {
+function FloatingRemote({ announcements, onHome, onNotice, onReport, onPreset }) {
   return (
-    <aside className="floating-remote" aria-label="빠른 메뉴">
-      <button className="remote-recruit" onClick={onRecruit}><img src="/assets/axe-recruitment-poster.png" alt="" /><span>모집중</span></button>
-      <button onClick={onNotice}><b>공지</b>{announcements.length > 0 && <span className="remote-dot">{Math.min(announcements.length, 9)}</span>}</button>
-      <button onClick={onReport}><b>제보</b><small>정보 수정</small></button>
-      {user && <button onClick={onPreset}><b>내 프리셋</b><small>저장 세팅</small></button>}
+    <aside className="floating-remote-v111" aria-label="AXE HUB 빠른 메뉴">
+      <button onClick={onHome}>
+        <span className="remote-icon">⌂</span>
+        <b>홈</b>
+      </button>
+      <button onClick={onNotice}>
+        <span className="remote-icon">!</span>
+        <b>공지</b>
+        {announcements.length > 0 && <span className="remote-dot">{Math.min(announcements.length, 9)}</span>}
+      </button>
+      <button onClick={onReport}>
+        <span className="remote-icon">✎</span>
+        <b>제보</b>
+      </button>
+      <button onClick={onPreset}>
+        <span className="remote-icon">★</span>
+        <b>내 프리셋</b>
+      </button>
     </aside>
+  );
+}
+
+function RecruitmentMini() {
+  const contact = String(import.meta.env.VITE_AXE_CONTACT_URL || "").trim();
+  const inner = (
+    <>
+      <span>AXE RECRUIT</span>
+      <strong>AXE 인원모집 중</strong>
+      <small>DM 문의 주세요.</small>
+    </>
+  );
+
+  return contact ? (
+    <a className="recruitment-mini" href={contact} target="_blank" rel="noreferrer">{inner}</a>
+  ) : (
+    <div className="recruitment-mini">{inner}</div>
   );
 }
 
@@ -624,7 +641,36 @@ function BuildDetail({
   const tags = visibleTags(build.tags);
   const [commentText, setCommentText] = useState("");
   const [commentBusy, setCommentBusy] = useState(false);
-  const canManage = Boolean(user && (profile?.is_admin || (build.author_id && build.author_id === user.id)));
+
+  const firstConfiguredKey =
+    SLOT_META.find((meta) => {
+      const slot = slots.find((s) => s.slot_key === meta.key);
+      return slot?.prefix_modbook_id || slot?.suffix_modbook_id;
+    })?.key || "outer";
+
+  const [activeSlotKey, setActiveSlotKey] = useState(firstConfiguredKey);
+
+  useEffect(() => {
+    const nextKey =
+      SLOT_META.find((meta) => {
+        const slot = slots.find((s) => s.slot_key === meta.key);
+        return slot?.prefix_modbook_id || slot?.suffix_modbook_id;
+      })?.key || "outer";
+    setActiveSlotKey(nextKey);
+  }, [build.id]);
+
+  const canManage = Boolean(
+    user && (profile?.is_admin || (build.author_id && build.author_id === user.id))
+  );
+
+  const activeMeta = SLOT_META.find((meta) => meta.key === activeSlotKey) || SLOT_META[0];
+  const activeSlot = slots.find((s) => s.slot_key === activeMeta.key) || {};
+  const activePrefix = modMap.get(activeSlot?.prefix_modbook_id);
+  const activeSuffix = modMap.get(activeSlot?.suffix_modbook_id);
+
+  const slotSummary = summarizeBuildOptions([activeSlot], modMap);
+  const percentBadge = slotSummary.rows.find((row) => row.unit === "%" && row.value > 0);
+  const slotBadge = percentBadge ? formatSigned(percentBadge.value, percentBadge.unit) : "";
 
   const submitComment = async () => {
     if (!commentText.trim()) return;
@@ -634,69 +680,221 @@ function BuildDetail({
     setCommentBusy(false);
   };
 
-  const HoverMod = ({ type, mod }) => (
-    <div className={cls("hover-mod", type === "접두" ? "prefix-mod" : "suffix-mod", !mod && "is-empty")}>
-      <div className="hover-mod-head"><span>{type}</span><strong>{mod?.name || "선택 없음"}</strong></div>
-      <div className="hover-mod-options">
-        {mod ? optionLines(mod).map((line, idx) => <p className={line.trim().startsWith("*") ? "warning" : ""} key={`${mod.id}-${idx}`}>{line.replace(/^\*/, "⚠ ")}</p>) : <p>선택된 개조서가 없습니다.</p>}
+  const TooltipMod = ({ type, mod }) => (
+    <section className={cls("internal-tooltip-mod", type === "접두" ? "prefix" : "suffix", !mod && "empty")}>
+      <div className="internal-tooltip-mod-head">
+        <div>
+          <span>{type}</span>
+          <em>{mod?.type || type}</em>
+        </div>
+        <strong>{mod?.name || "선택 없음"}</strong>
       </div>
-    </div>
+      {mod ? (
+        <div className="internal-tooltip-options">
+          {optionLines(mod).map((line, idx) => (
+            <div key={`${mod.id}-${idx}`} className={line.trim().startsWith("*") ? "warning" : ""}>
+              <b>{line.replace(/^\*/, "⚠ ")}</b>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="internal-tooltip-empty">선택된 개조서가 없습니다.</div>
+      )}
+    </section>
   );
 
   return (
     <Modal title={build.title} onClose={onClose} wide>
-      <div className="legacy-build-head">
-        <div><span className="member-build-label">{build.author_id ? "MEMBER BUILD" : "BUILD"}</span><div className="badges">{tags.map((tag) => <span className="badge" key={tag}>{tag}</span>)}</div><p>{build.summary || "세팅 설명이 없습니다."}</p></div>
-        <div className="detail-head-actions">
-          <button className={cls("preset-prominent", favorite && "active")} onClick={() => onFavorite(build)}>{favorite ? "★ 내 프리셋 저장됨" : "☆ 내 프리셋"}</button>
-          <div className="detail-stats"><span>작성 {build.author_name || "익명"}</span><span>조회 {build.view_count || 0}</span></div>
+      <div className="legacy-build-head internal-detail-head">
+        <div>
+          <span className="member-build-label">{build.author_id ? "MEMBER BUILD" : "BUILD"}</span>
+          <div className="badges">{tags.map((tag) => <span className="badge" key={tag}>{tag}</span>)}</div>
+          <p>{build.summary || "세팅 설명이 없습니다."}</p>
+        </div>
+
+        <div className="internal-detail-actions">
+          <button
+            className={cls("preset-prominent", favorite && "active")}
+            onClick={() => onFavorite(build)}
+          >
+            {favorite ? "★ 내 프리셋 저장됨" : "☆ 내 프리셋"}
+          </button>
+          <div className="detail-stats">
+            <span>작성 {build.author_name || "익명"}</span>
+            <span>조회 {build.view_count || 0}</span>
+          </div>
         </div>
       </div>
 
-      <div className="social-action-row">
-        <button className={cls("vote-btn like", userVote === 1 && "active")} onClick={() => user ? onVote(userVote === 1 ? 0 : 1) : onLogin()}>▲ 추천 <strong>{build.like_count || 0}</strong></button>
-        <button className={cls("vote-btn dislike", userVote === -1 && "active")} onClick={() => user ? onVote(userVote === -1 ? 0 : -1) : onLogin()}>▼ 비추천 <strong>{build.dislike_count || 0}</strong></button>
+      <div className="social-action-row compact-social-row">
+        <button
+          className={cls("vote-btn like", userVote === 1 && "active")}
+          onClick={() => user ? onVote(userVote === 1 ? 0 : 1) : onLogin()}
+        >
+          ▲ 추천 <strong>{build.like_count || 0}</strong>
+        </button>
+        <button
+          className={cls("vote-btn dislike", userVote === -1 && "active")}
+          onClick={() => user ? onVote(userVote === -1 ? 0 : -1) : onLogin()}
+        >
+          ▼ 비추천 <strong>{build.dislike_count || 0}</strong>
+        </button>
         <span className="comment-count-chip">댓글 {build.comment_count || comments.length || 0}</span>
       </div>
 
-      {build.description && <div className="description legacy-description">{build.description}</div>}
+      {build.description && (
+        <div className="description internal-description">{build.description}</div>
+      )}
 
-      <div className="legacy-build-layout hover-build-layout">
-        <section className="equipment-panel hover-equipment-panel">
-          <div className="equipment-panel-head"><div><span>GEAR SET</span><strong>장비 구성</strong></div><em>장비에 마우스를 올리면 옵션 표시</em></div>
-          <div className="equipment-grid hover-equipment-grid">
-            {SLOT_META.map((meta) => {
-              const slot = slots.find((s) => s.slot_key === meta.key);
-              const prefix = modMap.get(slot?.prefix_modbook_id);
-              const suffix = modMap.get(slot?.suffix_modbook_id);
-              return (
-                <article className="hover-equipment-item" key={meta.key} tabIndex={0}>
-                  <div className="equipment-visual"><img className="equipment-image" src={meta.image} alt={`${meta.label} AXE 팀복`} /></div>
-                  <div className="hover-equipment-label"><strong>{meta.label}</strong><div><span className="prefix-text">접두 {prefix?.name || "미선택"}</span><span className="suffix-text">접미 {suffix?.name || "미선택"}</span></div></div>
-                  <div className="equipment-hover-panel"><div className="hover-panel-title"><span>{meta.label}</span><em>장비 옵션</em></div><HoverMod type="접두" mod={prefix} /><HoverMod type="접미" mod={suffix} />{slot?.comment && <p className="hover-comment">{slot.comment}</p>}</div>
-                </article>
-              );
-            })}
+      <div className="internal-build-layout">
+        <section className="internal-equipment-panel">
+          <div className="internal-equipment-top">
+            <div className="internal-equipment-tab">
+              <strong>장비</strong>
+              <span>4</span>
+            </div>
+            <em>AXE BUILD</em>
+          </div>
+
+          <div className="internal-equipment-body">
+            <div className="internal-equipment-grid">
+              {SLOT_META.map((meta) => {
+                const slot = slots.find((s) => s.slot_key === meta.key);
+                const selected = activeSlotKey === meta.key;
+                const slotData = summarizeBuildOptions([slot || {}], modMap);
+                const badgeRow = slotData.rows.find((row) => row.unit === "%" && row.value > 0);
+                const badge = badgeRow ? formatSigned(badgeRow.value, badgeRow.unit) : "";
+
+                return (
+                  <button
+                    type="button"
+                    key={meta.key}
+                    className={cls("internal-equipment-card", selected && "active")}
+                    onPointerEnter={() => setActiveSlotKey(meta.key)}
+                    onMouseEnter={() => setActiveSlotKey(meta.key)}
+                    onFocus={() => setActiveSlotKey(meta.key)}
+                    onClick={() => setActiveSlotKey(meta.key)}
+                  >
+                    <div className="internal-equipment-image">
+                      <img src={meta.image} alt={`${meta.label} AXE 팀복`} />
+                      {badge && <span>{badge}</span>}
+                    </div>
+                    <strong>{meta.label}</strong>
+                  </button>
+                );
+              })}
+            </div>
+
+            <aside className="internal-equipment-tooltip" aria-live="polite">
+              <div className="internal-tooltip-head">
+                <div>
+                  <small>{build.title}</small>
+                  <h3>{activeMeta.label}</h3>
+                </div>
+                {slotBadge && <strong>{slotBadge}</strong>}
+              </div>
+
+              <TooltipMod type="접두" mod={activePrefix} />
+              <TooltipMod type="접미" mod={activeSuffix} />
+
+              {activeSlot?.comment && (
+                <p className="internal-tooltip-comment">{activeSlot.comment}</p>
+              )}
+
+              <div className="internal-tooltip-foot">
+                장비에 마우스를 올리면 해당 부위 옵션이 즉시 바뀝니다.
+              </div>
+            </aside>
           </div>
         </section>
 
-        <aside className="summary-panel">
-          <div className="summary-head"><div><span>MAX ROLL SUMMARY</span><strong>전체 옵션 요약</strong></div><em>최대값 합산</em></div>
-          <div className="summary-rows">{summary.rows.length ? summary.rows.map((row) => <div className="summary-row" key={`${row.label}-${row.unit}`}><span>{row.label}</span><strong>{formatSigned(row.value, row.unit)}</strong></div>) : <div className="summary-empty">계산 가능한 옵션 범위가 없습니다.</div>}</div>
-          {summary.warnings.length > 0 && <div className="warning-summary"><span>주의 옵션</span>{summary.warnings.slice(0, 4).map((warning) => <p key={warning}>{warning}</p>)}</div>}
-          <div className="part-comments"><span>부위별 코멘트</span>{SLOT_META.map((meta) => { const slot = slots.find((s) => s.slot_key === meta.key); if (!slot?.comment) return null; return <div key={meta.key}><strong>{meta.label}</strong><p>{slot.comment}</p></div>; })}</div>
+        <aside className="summary-panel internal-summary-panel">
+          <div className="summary-head">
+            <div><span>MAX ROLL SUMMARY</span><strong>전체 옵션 요약</strong></div>
+            <em>최대값 합산</em>
+          </div>
+
+          <div className="summary-rows">
+            {summary.rows.length ? summary.rows.map((row) => (
+              <div className="summary-row" key={`${row.label}-${row.unit}`}>
+                <span>{row.label}</span>
+                <strong>{formatSigned(row.value, row.unit)}</strong>
+              </div>
+            )) : (
+              <div className="summary-empty">계산 가능한 옵션 범위가 없습니다.</div>
+            )}
+          </div>
+
+          {summary.warnings.length > 0 && (
+            <div className="warning-summary internal-warning-summary">
+              <span>주의 옵션</span>
+              {summary.warnings.slice(0, 4).map((warning) => <p key={warning}>{warning}</p>)}
+            </div>
+          )}
+
+          <div className="part-comments">
+            <span>부위별 코멘트</span>
+            {SLOT_META.map((meta) => {
+              const slot = slots.find((s) => s.slot_key === meta.key);
+              if (!slot?.comment) return null;
+              return (
+                <div key={meta.key}>
+                  <strong>{meta.label}</strong>
+                  <p>{slot.comment}</p>
+                </div>
+              );
+            })}
+          </div>
         </aside>
       </div>
 
       <section className="comments-section">
-        <div className="comments-head"><div><span>BUILD TALK</span><h3>댓글</h3></div><strong>{comments.length}</strong></div>
-        {user ? <div className="comment-write"><textarea value={commentText} maxLength={500} onChange={(e) => setCommentText(e.target.value)} placeholder="이 세팅을 써본 느낌이나 보완점을 남겨주세요." /><button className="btn primary" onClick={submitComment} disabled={commentBusy}>{commentBusy ? "등록 중..." : "댓글 등록"}</button></div> : <button className="comment-login" onClick={onLogin}>댓글을 남기려면 Discord 로그인</button>}
-        <div className="comment-list">{comments.map((comment) => <article className="comment-row" key={comment.id}><div className="comment-meta"><strong>{comment.author_name}</strong><span>{fmtDate(comment.created_at)}</span></div><p>{comment.body}</p>{user && (profile?.is_admin || comment.user_id === user.id) && <button className="comment-delete" onClick={() => onDeleteComment(comment)}>삭제</button>}</article>)}</div>
+        <div className="comments-head">
+          <div><span>BUILD TALK</span><h3>댓글</h3></div>
+          <strong>{comments.length}</strong>
+        </div>
+
+        {user ? (
+          <div className="comment-write">
+            <textarea
+              value={commentText}
+              maxLength={500}
+              onChange={(e) => setCommentText(e.target.value)}
+              placeholder="이 세팅을 써본 느낌이나 보완점을 남겨주세요."
+            />
+            <button className="btn primary" onClick={submitComment} disabled={commentBusy}>
+              {commentBusy ? "등록 중..." : "댓글 등록"}
+            </button>
+          </div>
+        ) : (
+          <button className="comment-login" onClick={onLogin}>댓글을 남기려면 Discord 로그인</button>
+        )}
+
+        <div className="comment-list">
+          {comments.map((comment) => (
+            <article className="comment-row" key={comment.id}>
+              <div className="comment-meta">
+                <strong>{comment.author_name}</strong>
+                <span>{fmtDate(comment.created_at)}</span>
+              </div>
+              <p>{comment.body}</p>
+              {user && (profile?.is_admin || comment.user_id === user.id) && (
+                <button className="comment-delete" onClick={() => onDeleteComment(comment)}>삭제</button>
+              )}
+            </article>
+          ))}
+        </div>
+
         {!comments.length && <div className="comment-empty">첫 댓글을 남겨보세요.</div>}
       </section>
 
       <div className="modal-actions sticky build-detail-actions">
-        {canManage && <><button className="btn ghost" onClick={() => onEdit(build, slots)}>수정</button><button className="btn danger" onClick={() => onDelete(build)}>삭제</button></>}
+        {canManage && (
+          <>
+            <button className="btn ghost" onClick={() => onEdit(build, slots)}>수정</button>
+            <button className="btn danger" onClick={() => onDelete(build)}>삭제</button>
+          </>
+        )}
         {user && <button className="btn ghost" onClick={onClone}>복제해서 작성</button>}
       </div>
     </Modal>
@@ -1203,7 +1401,6 @@ export default function App() {
   const [editor, setEditor] = useState(null);
   const [reportEditor, setReportEditor] = useState(false);
   const [profileModal, setProfileModal] = useState(false);
-  const [recruitModal, setRecruitModal] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState("전체");
   const [toast, setToast] = useState({ message: "", tone: "default" });
 
@@ -1578,16 +1775,18 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`}</pre>
       )}
 
       {profileModal && user && <ProfileModal user={user} profile={profile} request={nicknameRequest} onClose={() => setProfileModal(false)} onRequest={requestNickname} />}
-      {recruitModal && <RecruitmentPanel onClose={() => setRecruitModal(false)} />}
 
       <FloatingRemote
-        user={user}
         announcements={announcements}
-        onRecruit={() => setRecruitModal(true)}
+        onHome={() => {
+          setTab("builds");
+          window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 30);
+        }}
         onNotice={() => setTab("notices")}
         onReport={() => setTab("reports")}
         onPreset={() => user ? setTab("presets") : login()}
       />
+      <RecruitmentMini />
 
       <Toast message={toast.message} tone={toast.tone} />
 

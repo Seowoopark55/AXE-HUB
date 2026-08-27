@@ -1179,3 +1179,541 @@ select:focus,input:focus,textarea:focus{border-color:rgba(247,183,51,.65);box-sh
 @media(max-width:1080px){.floating-remote{top:auto;bottom:12px;right:12px;transform:none;width:auto;grid-template-columns:68px repeat(3,62px);border-radius:13px}.floating-remote button{min-height:48px}.remote-recruit{height:48px!important}.remote-recruit img{object-position:center 15%}.equipment-hover-panel{left:8px!important;right:8px!important;top:12px;width:auto}}
 @media(max-width:700px){.notice-strip p{display:none}.notice-strip em{display:none}.floating-remote{grid-template-columns:56px repeat(3,54px);gap:3px}.floating-remote small{display:none}.hover-equipment-grid{grid-template-columns:1fr 1fr!important}.hover-equipment-item .equipment-visual{height:145px!important}.equipment-hover-panel{position:absolute;top:8px}.report-hero{align-items:flex-start;flex-direction:column}.comment-write{grid-template-columns:1fr}.comment-write .btn{justify-self:end}.notice-admin-form{grid-template-columns:1fr}.notice-admin-form textarea{grid-column:auto}}
 @media(max-width:480px){.hover-equipment-grid{grid-template-columns:1fr!important}.hover-equipment-item .equipment-visual{height:190px!important}.floating-remote{left:8px;right:8px;bottom:8px;grid-template-columns:repeat(4,1fr)}.fab{bottom:75px}}
+
+
+/* =========================================================
+   AXE BUILD v1.1.1
+   - AXE NET 내부 추천세팅 뷰어 구조 이식
+   - 고정 툴팁으로 직접 장비 전환
+   - 큰 우측 리모컨 / 모집 텍스트화
+   ========================================================= */
+
+:root{
+  --prefix:#62b5ff;
+  --suffix:#ff6b72;
+}
+
+/* hide old remote / recruitment visual systems */
+.floating-remote,
+.recruitment-banner-wrap,
+.recruitment-banner,
+.recruitment-section,
+.recruitment-mini-old{
+  display:none!important;
+}
+
+/* Bigger right-side remote */
+.floating-remote-v111{
+  position:fixed;
+  right:18px;
+  top:50%;
+  transform:translateY(-50%);
+  z-index:65;
+  width:118px;
+  padding:8px;
+  display:grid;
+  gap:7px;
+  border-radius:18px;
+  border:1px solid #34343a;
+  background:rgba(12,12,14,.95);
+  backdrop-filter:blur(14px);
+  box-shadow:0 22px 70px rgba(0,0,0,.46);
+}
+.floating-remote-v111 button{
+  position:relative;
+  min-height:66px;
+  border:1px solid #2a2a2f;
+  border-radius:13px;
+  background:#141416;
+  color:#a7a7ad;
+  cursor:pointer;
+  display:grid;
+  grid-template-columns:30px 1fr;
+  align-items:center;
+  gap:8px;
+  padding:0 10px;
+  text-align:left;
+  transition:.16s ease;
+}
+.floating-remote-v111 button:hover{
+  transform:translateX(-3px);
+  border-color:rgba(247,183,51,.42);
+  background:#19191c;
+  color:#fff;
+}
+.floating-remote-v111 b{
+  font-size:12px;
+  font-weight:950;
+  white-space:nowrap;
+}
+.remote-icon{
+  width:30px;
+  height:30px;
+  border-radius:9px;
+  display:grid;
+  place-items:center;
+  background:#0c0c0e;
+  border:1px solid #29292d;
+  color:var(--gold);
+  font-size:16px;
+  font-weight:1000;
+}
+.floating-remote-v111 .remote-dot{
+  right:7px;
+  top:7px;
+  min-width:18px;
+  height:18px;
+  font-size:8px;
+}
+
+/* recruitment is text only, separate from the 4-button remote */
+.recruitment-mini{
+  position:fixed;
+  right:18px;
+  top:calc(50% + 170px);
+  transform:translateY(-50%);
+  z-index:64;
+  width:118px;
+  padding:11px 10px;
+  border-radius:14px;
+  border:1px solid rgba(247,183,51,.28);
+  background:
+    linear-gradient(145deg,rgba(247,183,51,.08),rgba(10,10,12,.95) 48%),
+    #0d0d0f;
+  box-shadow:0 16px 50px rgba(0,0,0,.35);
+  text-align:center;
+}
+.recruitment-mini>span{
+  display:block;
+  color:var(--gold);
+  font-size:7px;
+  letter-spacing:.14em;
+  font-weight:1000;
+}
+.recruitment-mini>strong{
+  display:block;
+  margin-top:5px;
+  color:#f1f1f3;
+  font-size:10px;
+  line-height:1.35;
+}
+.recruitment-mini>small{
+  display:block;
+  margin-top:3px;
+  color:#8b8b92;
+  font-size:8px;
+}
+
+/* Wider build detail modal so core information fits at once */
+.modal.wide{
+  width:min(1260px,calc(100vw - 44px))!important;
+}
+.internal-detail-head{
+  padding-bottom:14px!important;
+}
+.internal-detail-actions{
+  display:grid;
+  justify-items:end;
+  gap:7px;
+}
+.compact-social-row{
+  margin-top:0!important;
+  padding-top:0!important;
+}
+.internal-description{
+  margin-bottom:12px!important;
+}
+
+/* Main 2-column internal AXE NET layout */
+.internal-build-layout{
+  padding:0 18px 18px;
+  display:grid;
+  grid-template-columns:minmax(0,1.62fr) minmax(310px,.76fr);
+  gap:12px;
+  align-items:start;
+}
+.internal-equipment-panel,
+.internal-summary-panel{
+  border:1px solid #29292d;
+  border-radius:15px;
+  background:#0f0f11;
+  min-width:0;
+}
+.internal-equipment-top{
+  height:48px;
+  display:grid;
+  grid-template-columns:1fr auto;
+  align-items:center;
+  padding:0 15px;
+  border-bottom:1px solid #29292d;
+}
+.internal-equipment-tab{
+  justify-self:center;
+  height:48px;
+  min-width:150px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  color:#efeff2;
+  border-bottom:2px solid var(--gold);
+}
+.internal-equipment-tab strong{
+  font-size:12px;
+}
+.internal-equipment-tab span{
+  min-width:20px;
+  height:18px;
+  padding:0 5px;
+  border-radius:5px;
+  display:grid;
+  place-items:center;
+  background:#38383e;
+  color:#fff;
+  font-size:8px;
+  font-weight:950;
+}
+.internal-equipment-top>em{
+  font-size:7px;
+  font-style:normal;
+  color:#626269;
+  letter-spacing:.14em;
+}
+
+.internal-equipment-body{
+  min-height:445px;
+  display:grid;
+  grid-template-columns:minmax(310px,.82fr) minmax(300px,1.18fr);
+  gap:12px;
+  padding:13px;
+  align-items:stretch;
+}
+
+/* 4 equipment items - compact 2x2, immediately readable */
+.internal-equipment-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:9px;
+  align-content:center;
+}
+.internal-equipment-card{
+  border:0;
+  background:transparent;
+  color:inherit;
+  cursor:pointer;
+  min-width:0;
+  padding:0;
+  display:grid;
+  gap:5px;
+}
+.internal-equipment-image{
+  position:relative;
+  height:164px;
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+  border:1px solid #303036;
+  border-radius:9px;
+  background:
+    radial-gradient(circle at 50% 48%,rgba(255,255,255,.035),transparent 62%),
+    #0b0b0d;
+  transition:.12s ease;
+}
+.internal-equipment-card:hover .internal-equipment-image,
+.internal-equipment-card:focus .internal-equipment-image,
+.internal-equipment-card.active .internal-equipment-image{
+  border-color:rgba(247,183,51,.72);
+  box-shadow:0 0 0 1px rgba(247,183,51,.08),inset 0 0 25px rgba(247,183,51,.025);
+}
+.internal-equipment-image img{
+  width:92%;
+  height:92%;
+  object-fit:contain;
+  display:block;
+  filter:drop-shadow(0 12px 15px rgba(0,0,0,.36));
+  transition:.12s ease;
+}
+.internal-equipment-card:hover img,
+.internal-equipment-card.active img{
+  transform:scale(1.025);
+}
+.internal-equipment-image>span{
+  position:absolute;
+  right:6px;
+  top:6px;
+  padding:4px 6px;
+  border-radius:6px;
+  border:1px solid rgba(247,183,51,.48);
+  background:rgba(9,9,10,.88);
+  color:var(--gold2);
+  font-size:9px;
+  font-weight:1000;
+}
+.internal-equipment-card>strong{
+  color:#8e8e95;
+  font-size:10px;
+  text-align:center;
+}
+.internal-equipment-card.active>strong{
+  color:#d7d7dc;
+}
+
+/* fixed tooltip panel - does not overlap hover targets */
+.internal-equipment-tooltip{
+  min-width:0;
+  height:100%;
+  border:1px solid #3b3b42;
+  border-radius:10px;
+  background:linear-gradient(145deg,#252a31,#1d2127);
+  box-shadow:0 14px 34px rgba(0,0,0,.3);
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+.internal-tooltip-head{
+  min-height:78px;
+  padding:13px 14px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  border-bottom:1px solid rgba(255,255,255,.1);
+}
+.internal-tooltip-head small{
+  display:block;
+  color:#f0b845;
+  font-size:9px;
+  font-weight:900;
+  max-width:230px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.internal-tooltip-head h3{
+  margin:4px 0 0;
+  color:#fff;
+  font-size:19px;
+  letter-spacing:-.035em;
+}
+.internal-tooltip-head>strong{
+  color:var(--gold2);
+  font-size:21px;
+  font-weight:1000;
+}
+
+.internal-tooltip-mod{
+  padding:13px 14px 12px;
+  min-height:124px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.internal-tooltip-mod.prefix{
+  box-shadow:inset 3px 0 var(--prefix);
+}
+.internal-tooltip-mod.suffix{
+  box-shadow:inset 3px 0 var(--suffix);
+}
+.internal-tooltip-mod.empty{
+  opacity:.6;
+}
+.internal-tooltip-mod-head{
+  display:grid;
+  grid-template-columns:76px 1fr;
+  gap:8px;
+  align-items:center;
+}
+.internal-tooltip-mod-head>div{
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.internal-tooltip-mod-head span{
+  font-size:10px;
+  font-weight:1000;
+}
+.internal-tooltip-mod.prefix span{color:var(--prefix)}
+.internal-tooltip-mod.suffix span{color:var(--suffix)}
+.internal-tooltip-mod-head em{
+  font-style:normal;
+  padding:2px 5px;
+  border-radius:4px;
+  background:rgba(255,255,255,.07);
+  color:#a8a8ae;
+  font-size:7px;
+}
+.internal-tooltip-mod-head strong{
+  color:#f5f5f6;
+  font-size:14px;
+}
+.internal-tooltip-options{
+  margin-top:10px;
+  display:grid;
+  gap:7px;
+}
+.internal-tooltip-options>div{
+  padding-top:7px;
+  border-top:1px solid rgba(255,255,255,.07);
+}
+.internal-tooltip-options b{
+  color:#e8e8eb;
+  font-size:11px;
+  font-weight:800;
+  line-height:1.45;
+}
+.internal-tooltip-options .warning b{
+  color:#ff8b88;
+}
+.internal-tooltip-empty{
+  margin-top:14px;
+  color:#85858c;
+  font-size:10px;
+}
+.internal-tooltip-comment{
+  margin:10px 14px 0;
+  padding:10px 11px;
+  border-radius:7px;
+  background:rgba(8,8,10,.24);
+  color:#b7b7bd;
+  font-size:9px;
+  line-height:1.55;
+}
+.internal-tooltip-foot{
+  margin-top:auto;
+  padding:10px 14px;
+  border-top:1px solid rgba(255,255,255,.08);
+  color:#8a8a91;
+  font-size:8px;
+}
+
+/* right summary stays completely visible */
+.internal-summary-panel{
+  padding:16px!important;
+  align-self:stretch!important;
+}
+.internal-summary-panel .summary-head div>span{
+  font-size:9px!important;
+}
+.internal-summary-panel .summary-head div>strong{
+  font-size:18px!important;
+}
+.internal-summary-panel .summary-row{
+  min-height:52px;
+  padding:12px 2px!important;
+}
+.internal-summary-panel .summary-row span{
+  font-size:12px!important;
+}
+.internal-summary-panel .summary-row strong{
+  font-size:17px!important;
+}
+.internal-warning-summary{
+  padding:13px 14px!important;
+}
+.internal-warning-summary>span{
+  font-size:11px!important;
+}
+.internal-warning-summary p{
+  margin:7px 0 0!important;
+  font-size:11px!important;
+  line-height:1.55!important;
+}
+
+/* old per-item hover overlay is no longer used */
+.equipment-hover-panel,
+.hover-equipment-panel,
+.hover-equipment-grid,
+.hover-equipment-item{
+  /* old styles intentionally bypassed by new v1.1.1 markup */
+}
+
+/* Keep comments separated under the one-screen gear block */
+.comments-section{
+  margin-top:2px!important;
+}
+
+/* responsive */
+@media(max-width:1420px){
+  .floating-remote-v111{right:8px;width:104px}
+  .recruitment-mini{right:8px;width:104px}
+  .floating-remote-v111 b{font-size:11px}
+}
+@media(max-width:1180px){
+  .internal-build-layout{
+    grid-template-columns:1fr;
+  }
+  .internal-equipment-body{
+    grid-template-columns:minmax(300px,.75fr) minmax(300px,1.25fr);
+  }
+  .floating-remote-v111,
+  .recruitment-mini{
+    display:none;
+  }
+}
+@media(max-width:760px){
+  .modal.wide{
+    width:min(100%,calc(100vw - 12px))!important;
+  }
+  .internal-build-layout{
+    padding:0 9px 12px;
+  }
+  .internal-equipment-body{
+    min-height:0;
+    grid-template-columns:1fr;
+  }
+  .internal-equipment-grid{
+    grid-template-columns:1fr 1fr;
+  }
+  .internal-equipment-image{
+    height:155px;
+  }
+  .internal-equipment-tooltip{
+    min-height:390px;
+  }
+
+  .floating-remote-v111{
+    display:grid;
+    top:auto;
+    left:8px;
+    right:8px;
+    bottom:8px;
+    width:auto;
+    transform:none;
+    grid-template-columns:repeat(4,1fr);
+    padding:5px;
+    gap:4px;
+    border-radius:14px;
+  }
+  .floating-remote-v111 button{
+    min-height:52px;
+    grid-template-columns:1fr;
+    gap:2px;
+    justify-items:center;
+    padding:4px;
+    text-align:center;
+  }
+  .floating-remote-v111 button:hover{
+    transform:none;
+  }
+  .floating-remote-v111 b{
+    font-size:9px;
+  }
+  .remote-icon{
+    width:25px;
+    height:25px;
+    font-size:13px;
+  }
+  .recruitment-mini{
+    display:none;
+  }
+  .fab{bottom:72px!important}
+}
+@media(max-width:480px){
+  .internal-equipment-grid{
+    gap:6px;
+  }
+  .internal-equipment-image{
+    height:135px;
+  }
+  .internal-tooltip-head h3{
+    font-size:17px;
+  }
+}
