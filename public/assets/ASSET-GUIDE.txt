@@ -1,0 +1,13 @@
+AXE BUILD v1.0.2 브랜드 이미지
+
+1) 좌측 상단 실제 AXE 로고
+파일명: axe-logo.png
+경로: public/assets/axe-logo.png
+권장: 투명 배경 PNG
+파일이 없으면 AXE 텍스트 로고로 자동 대체됩니다.
+
+2) 홈 회사 홍보/모집 배너
+파일명: axe-recruitment.png
+경로: public/assets/axe-recruitment.png
+권장: 가로형 6:1 ~ 10:1
+파일이 없더라도 다크 AXE 홍보 배너가 기본 표시됩니다.

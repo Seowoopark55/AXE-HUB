@@ -8,7 +8,8 @@ const SLOT_META = [
   { key: "shoes", label: "신발", icon: "04", keywords: ["신발"] }
 ];
 
-const QUICK_FILTERS = ["전체", "공식", "이동속도", "밸런스", "채광", "전투"];
+const BASE_CATEGORIES = ["전체", "인기", "무법지대"];
+const HIDDEN_TAGS = new Set(["AXE 추천", "AXE OFFICIAL", "공식"]);
 
 const emptySlots = () =>
   Object.fromEntries(
@@ -66,6 +67,70 @@ function slotAllows(mod, slot) {
   return slot.keywords.some((k) => parts.includes(k));
 }
 
+
+function visibleTags(tags = []) {
+  return (tags || []).filter((tag) => tag && !HIDDEN_TAGS.has(String(tag).trim()));
+}
+
+function buildSearchText(build) {
+  return [build?.title, build?.summary, build?.description, build?.author_name, ...visibleTags(build?.tags)]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
+function buildCategoryList(builds) {
+  const priority = new Set(BASE_CATEGORIES);
+  const tags = [];
+  for (const build of builds || []) {
+    for (const tag of visibleTags(build.tags)) {
+      if (!priority.has(tag) && !tags.includes(tag)) tags.push(tag);
+    }
+  }
+  return [...BASE_CATEGORIES, ...tags];
+}
+
+function formatSigned(value, unit = "") {
+  if (!Number.isFinite(value)) return "-";
+  const rounded = Math.abs(value % 1) < 0.001 ? Math.round(value) : Number(value.toFixed(1));
+  return `${rounded > 0 ? "+" : ""}${rounded}${unit}`;
+}
+
+function extractBestOption(line) {
+  const normalized = normalizeRange(line || "").replace(/^\*/, "").trim();
+  const range = normalized.match(/\((-?\d+(?:\.\d+)?)\s*(%)?\s*~\s*(-?\d+(?:\.\d+)?)\s*(%)?\)/);
+  if (!range) return null;
+  const a = Number(range[1]);
+  const b = Number(range[3]);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+  const best = Math.max(a, b);
+  const unit = range[2] || range[4] || "";
+  const label = normalized.replace(range[0], "").replace(/\s+/g, " ").trim();
+  if (!label) return null;
+  return { label, value: best, unit };
+}
+
+function summarizeBuildOptions(slots, modMap) {
+  const totals = new Map();
+  const warnings = [];
+  for (const slot of slots || []) {
+    for (const id of [slot.prefix_modbook_id, slot.suffix_modbook_id]) {
+      const mod = modMap.get(id);
+      if (!mod) continue;
+      for (const raw of optionLines(mod)) {
+        if (String(raw).trim().startsWith("*")) warnings.push(String(raw).replace(/^\*/, "").trim());
+        const parsed = extractBestOption(raw);
+        if (!parsed) continue;
+        const key = `${parsed.label}__${parsed.unit}`;
+        const prev = totals.get(key) || { label: parsed.label, unit: parsed.unit, value: 0 };
+        prev.value += parsed.value;
+        totals.set(key, prev);
+      }
+    }
+  }
+  return { rows: [...totals.values()], warnings: [...new Set(warnings)] };
+}
+
 function Toast({ message, tone = "default" }) {
   if (!message) return null;
   return <div className={cls("toast", tone === "error" && "error")}>{message}</div>;
@@ -94,9 +159,16 @@ function Modal({ title, children, onClose, wide = false }) {
 }
 
 function Brand() {
+  const [logoFailed, setLogoFailed] = useState(false);
   return (
     <div className="brand">
-      <div className="brand-mark">A</div>
+      <div className="brand-mark brand-logo-box">
+        {!logoFailed ? (
+          <img src="/assets/axe-logo.png" alt="AXE 로고" onError={() => setLogoFailed(true)} />
+        ) : (
+          <span className="brand-fallback">AXE</span>
+        )}
+      </div>
       <div>
         <strong>AXE BUILD</strong>
         <span>AXE HUB · PUBLIC BUILD LAB</span>
@@ -157,68 +229,36 @@ function Header({ tab, setTab, user, profile, onLogin, onLogout, onCreate }) {
   );
 }
 
-function Hero({ featuredBuild, featuredSlots, modMap, user, onCreate, onOpenFeatured, onJump, onQuickFilter }) {
-  const slotMod = (slot, side) => {
-    const id = side === "prefix" ? slot?.prefix_modbook_id : slot?.suffix_modbook_id;
-    return modMap.get(id)?.name || "미지정";
-  };
+function Hero({ user, onCreate, onJump }) {
   return (
-    <section className="hero shell">
+    <section className="hero shell hero-simple">
       <div className="hero-copy">
         <div className="eyebrow gold">AXE BUILD · PUBLIC SETTING HUB</div>
-        <h1>원하는 세팅을<br />슬롯 한눈에 비교.</h1>
+        <h1>추천세팅을<br />가장 빠르게 찾는 곳.</h1>
         <p>
-          추천세팅을 겉옷·상의·하의·신발 슬롯 기준으로 바로 확인하고 필요한 조합만 빠르게 비교하세요.
-          로그인 없이 조회하고, Discord 로그인 후 내 세팅으로 저장할 수 있습니다.
+          다른 사람의 세팅을 장비 슬롯 기준으로 확인하고, 필요한 조합은 복제해서 내 세팅으로 만들 수 있습니다.
+          추천세팅과 개조서 열람은 로그인 없이 이용할 수 있습니다.
         </p>
         <div className="hero-actions">
           <button className="btn primary" onClick={onJump}>추천세팅 바로 보기</button>
-          <button className="btn ghost" onClick={user ? onCreate : () => onQuickFilter("공식")}>
-            {user ? "내 세팅 만들기" : "공식 세팅 보기"}
-          </button>
-        </div>
-        <div className="quick-entry">
-          <span>빠른 탐색</span>
-          <div>
-            {QUICK_FILTERS.slice(1).map((filter) => (
-              <button key={filter} onClick={() => onQuickFilter(filter)}>{filter}</button>
-            ))}
-          </div>
+          {user && <button className="btn ghost" onClick={onCreate}>내 세팅 만들기</button>}
         </div>
       </div>
+    </section>
+  );
+}
 
-      <div className="featured-wrap">
-        <div className="featured-card">
-          <div className="featured-head">
-            <div>
-              <span className="featured-kicker">FEATURED BUILD</span>
-              <h3>{featuredBuild?.title || "추천세팅 준비 중"}</h3>
-            </div>
-            {featuredBuild?.is_official && <span className="badge official">AXE OFFICIAL</span>}
-          </div>
-          <div className="featured-tags">
-            {(featuredBuild?.tags || []).slice(0, 4).map((tag) => <span key={tag}>{tag}</span>)}
-          </div>
-          <div className="featured-slots">
-            {SLOT_META.map((meta) => {
-              const slot = (featuredSlots || []).find((v) => v.slot_key === meta.key);
-              return (
-                <div className="hero-slot" key={meta.key}>
-                  <div className="hero-slot-name"><span>{meta.icon}</span><strong>{meta.label}</strong></div>
-                  <div className="hero-slot-mods">
-                    <div><em>접두</em><b>{slotMod(slot, "prefix")}</b></div>
-                    <div><em>접미</em><b>{slotMod(slot, "suffix")}</b></div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          <div className="featured-foot">
-            <div><span>작성자</span><strong>{featuredBuild?.author_name || "AXE"}</strong></div>
-            <div><span>즐겨찾기</span><strong>{featuredBuild?.favorite_count || 0}</strong></div>
-            <button className="btn primary compact" onClick={onOpenFeatured} disabled={!featuredBuild}>자세히 보기</button>
-          </div>
+function CompanyPromo() {
+  const contact = String(import.meta.env.VITE_AXE_CONTACT_URL || "").trim();
+  return (
+    <section className="shell company-promo-wrap">
+      <div className="company-promo">
+        <div className="company-promo-copy">
+          <span>AXE COMPANY · RECRUITMENT</span>
+          <strong>함께 뛰고, 함께 성장하는 AXE.</strong>
+          <p>AXE의 플레이와 분위기가 궁금하다면 회사 소개와 모집 안내를 확인해보세요.</p>
         </div>
+        {contact && <a className="btn primary compact" href={contact} target="_blank" rel="noreferrer">AXE 문의</a>}
       </div>
     </section>
   );
@@ -226,12 +266,12 @@ function Hero({ featuredBuild, featuredSlots, modMap, user, onCreate, onOpenFeat
 
 function BuildCard({ build, slots, modMap, onOpen, favorite, onFavorite }) {
   const modName = (id) => modMap.get(id)?.name || "미지정";
+  const tags = visibleTags(build.tags).slice(0, 3);
   return (
     <article className="build-card" onClick={() => onOpen(build)}>
       <div className="build-card-top">
         <div className="badges">
-          {build.is_official && <span className="badge official">AXE OFFICIAL</span>}
-          {(build.tags || []).slice(0, 2).map((tag) => <span className="badge" key={tag}>{tag}</span>)}
+          {tags.map((tag) => <span className="badge" key={tag}>{tag}</span>)}
         </div>
         <button className={cls("favorite-btn", favorite && "active")} onClick={(e) => { e.stopPropagation(); onFavorite(build); }} aria-label="즐겨찾기">
           {favorite ? "★" : "☆"}
@@ -272,31 +312,36 @@ function BuildsPage({
   onOpen,
   onFavorite,
   onCreate,
-  quickFilter,
-  setQuickFilter
+  categoryFilter,
+  setCategoryFilter
 }) {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("latest");
-
-  const dynamicFilters = useMemo(() => {
-    const tags = [...new Set(builds.flatMap((b) => b.tags || []))];
-    return [...QUICK_FILTERS, ...tags.filter((v) => !QUICK_FILTERS.includes(v)).slice(0, 4)];
-  }, [builds]);
+  const categories = useMemo(() => buildCategoryList(builds), [builds]);
 
   const rows = useMemo(() => {
-    let result = builds.filter((b) => {
-      const hay = [b.title, b.summary, b.description, b.author_name, ...(b.tags || [])].join(" ").toLowerCase();
+    let result = builds.filter((build) => {
+      const hay = buildSearchText(build);
       const qOk = hay.includes(query.trim().toLowerCase());
-      const fOk = quickFilter === "전체" || (quickFilter === "공식" && b.is_official) || (b.tags || []).includes(quickFilter) || hay.includes(quickFilter.toLowerCase());
-      return qOk && fOk;
+      const categoryOk =
+        categoryFilter === "전체" ||
+        categoryFilter === "인기" ||
+        (categoryFilter === "무법지대" && hay.includes("무법")) ||
+        visibleTags(build.tags).includes(categoryFilter);
+      return qOk && categoryOk;
     });
+
     result = [...result].sort((a, b) => {
-      if (sort === "popular") return (b.favorite_count || 0) - (a.favorite_count || 0) || (b.view_count || 0) - (a.view_count || 0);
+      if (categoryFilter === "인기" || sort === "popular") {
+        return (b.favorite_count || 0) - (a.favorite_count || 0) ||
+          (b.view_count || 0) - (a.view_count || 0) ||
+          new Date(b.created_at) - new Date(a.created_at);
+      }
       if (sort === "views") return (b.view_count || 0) - (a.view_count || 0);
       return new Date(b.created_at) - new Date(a.created_at);
     });
     return result;
-  }, [builds, query, sort, quickFilter]);
+  }, [builds, query, sort, categoryFilter]);
 
   return (
     <section className="shell section" id="build-archive">
@@ -304,59 +349,61 @@ function BuildsPage({
         <div>
           <div className="eyebrow">BUILD ARCHIVE</div>
           <h2>추천세팅</h2>
-          <p>카드를 열기 전에도 장비 슬롯별 접두·접미 조합을 바로 비교할 수 있습니다.</p>
+          <p>카테고리를 선택하고 장비 슬롯 구성을 바로 비교해보세요.</p>
         </div>
         {user && <button className="btn primary" onClick={onCreate}>+ 세팅 작성</button>}
       </div>
 
-      <div className="filter-strip">
-        {dynamicFilters.map((filter) => (
-          <button key={filter} className={cls(quickFilter === filter && "active")} onClick={() => setQuickFilter(filter)}>{filter}</button>
+      <div className="category-strip" aria-label="추천세팅 카테고리">
+        {categories.map((category) => (
+          <button
+            key={category}
+            className={cls(categoryFilter === category && "active")}
+            onClick={() => setCategoryFilter(category)}
+          >
+            {category}
+          </button>
         ))}
       </div>
 
-      <div className="toolbar">
+      <div className="toolbar build-toolbar">
         <div className="searchbox">
           <span>⌕</span>
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="세팅명, 태그, 작성자 검색" />
           {query && <button onClick={() => setQuery("")}>×</button>}
         </div>
         <select value={sort} onChange={(e) => setSort(e.target.value)}>
-          <option value="latest">최신순</option><option value="popular">즐겨찾기순</option><option value="views">조회순</option>
+          <option value="latest">최신순</option>
+          <option value="popular">인기순</option>
+          <option value="views">조회순</option>
         </select>
       </div>
 
-      {loading ? <div className="empty">추천세팅을 불러오는 중...</div> : rows.length ? (
+      {loading ? (
+        <div className="empty">추천세팅을 불러오는 중...</div>
+      ) : rows.length ? (
         <div className="build-grid">
           {rows.map((build) => (
-            <BuildCard key={build.id} build={build} slots={buildSlotsMap[build.id] || []} modMap={modMap} onOpen={onOpen} favorite={favorites.has(build.id)} onFavorite={onFavorite} />
+            <BuildCard
+              key={build.id}
+              build={build}
+              slots={buildSlotsMap[build.id] || []}
+              modMap={modMap}
+              onOpen={onOpen}
+              favorite={favorites.has(build.id)}
+              onFavorite={onFavorite}
+            />
           ))}
         </div>
-      ) : <div className="empty">조건에 맞는 추천세팅이 없습니다.</div>}
-      <Promo />
+      ) : (
+        <div className="empty">조건에 맞는 추천세팅이 없습니다.</div>
+      )}
     </section>
   );
 }
 
 function Promo() {
-  const contact = String(import.meta.env.VITE_AXE_CONTACT_URL || "").trim();
-  return (
-    <div className="promo">
-      <div>
-        <div className="eyebrow gold">AXE COMMUNITY</div>
-        <h3>세팅 정보는 함께 쌓을수록 정확해집니다.</h3>
-        <p>
-          새로운 개조서, 수정된 수치, 더 좋은 세팅이 있다면 제보로 공유해주세요.
-          검수된 정보는 AXE BUILD에 반영됩니다.
-        </p>
-      </div>
-      {contact && (
-        <a className="btn primary" href={contact} target="_blank" rel="noreferrer">
-          AXE 문의하기
-        </a>
-      )}
-    </div>
-  );
+  return null;
 }
 
 function ModbookDetail({ mod }) {
@@ -503,40 +550,90 @@ function AdminPage({ profile, reports, onApprove, onReject }) {
 }
 
 function BuildDetail({ build, slots, modMap, favorite, user, onFavorite, onClose, onClone }) {
+  const summary = summarizeBuildOptions(slots, modMap);
+  const tags = visibleTags(build.tags);
+
   return (
     <Modal title={build.title} onClose={onClose} wide>
-      <div className="detail-summary">
+      <div className="legacy-build-head">
         <div>
-          <div className="badges">
-            {build.is_official && <span className="badge official">AXE OFFICIAL</span>}
-            {(build.tags || []).map((tag) => <span className="badge" key={tag}>{tag}</span>)}
-          </div>
-          <p>{build.summary}</p>
+          <span className="member-build-label">{build.author_id ? "MEMBER BUILD" : "BUILD"}</span>
+          <div className="badges">{tags.map((tag) => <span className="badge" key={tag}>{tag}</span>)}</div>
+          <p>{build.summary || "세팅 설명이 없습니다."}</p>
         </div>
         <div className="detail-stats">
-          <span>작성 {build.author_name}</span>
+          <span>작성 {build.author_name || "익명"}</span>
           <span>★ {build.favorite_count || 0}</span>
           <span>조회 {build.view_count || 0}</span>
         </div>
       </div>
-      {build.description && <div className="description">{build.description}</div>}
-      <div className="slot-grid">
-        {SLOT_META.map((meta) => {
-          const slot = slots.find((s) => s.slot_key === meta.key);
-          const prefix = modMap.get(slot?.prefix_modbook_id);
-          const suffix = modMap.get(slot?.suffix_modbook_id);
-          return (
-            <article className="slot-card" key={meta.key}>
-              <div className="slot-title"><span>{meta.label}</span><em>{meta.key.toUpperCase()}</em></div>
-              <SlotMod label="접두" mod={prefix} />
-              <SlotMod label="접미" mod={suffix} />
-              {slot?.comment && <p className="slot-comment">{slot.comment}</p>}
-            </article>
-          );
-        })}
+
+      {build.description && <div className="description legacy-description">{build.description}</div>}
+
+      <div className="legacy-build-layout">
+        <section className="inventory-panel">
+          <div className="inventory-tabs">
+            <span>인벤토리</span>
+            <strong>장비 <b>4</b></strong>
+            <em>AXE BUILD</em>
+          </div>
+          <div className="equipment-grid">
+            {SLOT_META.map((meta) => {
+              const slot = slots.find((s) => s.slot_key === meta.key);
+              const prefix = modMap.get(slot?.prefix_modbook_id);
+              const suffix = modMap.get(slot?.suffix_modbook_id);
+              return (
+                <article className="equipment-item" key={meta.key}>
+                  <div className="equipment-visual">
+                    <span className="equipment-code">{meta.icon}</span>
+                    <strong>{meta.label}</strong>
+                    <small>{meta.key.toUpperCase()}</small>
+                  </div>
+                  <div className="equipment-name">{meta.label}</div>
+                  <div className="equipment-mods">
+                    <div><span>접두</span><b>{prefix?.name || "선택 없음"}</b></div>
+                    <div><span>접미</span><b>{suffix?.name || "선택 없음"}</b></div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
+        <aside className="summary-panel">
+          <div className="summary-head">
+            <div><span>MAX ROLL SUMMARY</span><strong>전체 옵션 요약</strong></div>
+            <em>최대값 합산</em>
+          </div>
+          <div className="summary-rows">
+            {summary.rows.length ? summary.rows.map((row) => (
+              <div className="summary-row" key={`${row.label}-${row.unit}`}>
+                <span>{row.label}</span><strong>{formatSigned(row.value, row.unit)}</strong>
+              </div>
+            )) : <div className="summary-empty">계산 가능한 옵션 범위가 없습니다.</div>}
+          </div>
+
+          {summary.warnings.length > 0 && (
+            <div className="warning-summary">
+              <span>주의 옵션</span>
+              {summary.warnings.slice(0, 3).map((warning) => <p key={warning}>{warning}</p>)}
+            </div>
+          )}
+
+          <div className="part-comments">
+            <span>부위별 코멘트</span>
+            {SLOT_META.map((meta) => {
+              const slot = slots.find((s) => s.slot_key === meta.key);
+              if (!slot?.comment) return null;
+              return <div key={meta.key}><strong>{meta.label}</strong><p>{slot.comment}</p></div>;
+            })}
+          </div>
+          <div className="summary-footnote">장비 슬롯을 기준으로 접두·접미 조합을 한 화면에서 확인할 수 있습니다.</div>
+        </aside>
       </div>
+
       <div className="modal-actions sticky">
-        {user && <button className="btn ghost" onClick={onClone}>이 세팅 복제</button>}
+        {user && <button className="btn ghost" onClick={onClone}>복제해서 작성</button>}
         <button className={cls("btn", favorite ? "primary" : "ghost")} onClick={() => onFavorite(build)}>
           {favorite ? "★ 즐겨찾기 해제" : "☆ 즐겨찾기"}
         </button>
@@ -546,29 +643,62 @@ function BuildDetail({ build, slots, modMap, favorite, user, onFavorite, onClose
 }
 
 function SlotMod({ label, mod }) {
-  if (!mod) {
-    return <div className="slot-mod empty-mod"><span>{label}</span><strong>선택 없음</strong></div>;
-  }
+  if (!mod) return <div className="slot-mod empty-mod"><span>{label}</span><strong>선택 없음</strong></div>;
   return (
     <div className="slot-mod">
       <span>{label}</span>
       <strong>{mod.name}</strong>
       <small>{mod.category} · {mod.parts}</small>
-      <ul>
-        {optionLines(mod).map((line, i) => <li key={i}>{line.replace(/^\*/, "⚠ ")}</li>)}
-      </ul>
+    </div>
+  );
+}
+
+function ModifierPicker({ type, slotMeta, modbooks, value, onChange }) {
+  const [category, setCategory] = useState("전체 분류");
+  const [query, setQuery] = useState("");
+  const candidates = useMemo(
+    () => modbooks.filter((m) => m.type === type && slotAllows(m, slotMeta)),
+    [modbooks, type, slotMeta.key]
+  );
+  const categories = useMemo(() => [...new Set(candidates.map((m) => m.category).filter(Boolean))].sort(), [candidates]);
+  const filtered = useMemo(() => candidates.filter((m) => {
+    if (category !== "전체 분류" && m.category !== category) return false;
+    const hay = [m.name, m.category, m.parts, ...optionLines(m)].join(" ").toLowerCase();
+    return hay.includes(query.trim().toLowerCase());
+  }), [candidates, category, query]);
+
+  return (
+    <div className="modifier-picker">
+      <div className="modifier-picker-head"><strong>{type}</strong><span>{candidates.length}개</span></div>
+      <div className="modifier-picker-filters">
+        <label><span>분류</span><select value={category} onChange={(e) => setCategory(e.target.value)}><option>전체 분류</option>{categories.map((v) => <option key={v}>{v}</option>)}</select></label>
+        <label><span>검색</span><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="개조서명 / 옵션 검색" /></label>
+      </div>
+      <label className="modifier-select"><span>선택</span><select value={value || ""} onChange={(e) => onChange(e.target.value)}><option value="">선택 안 함</option>{filtered.map((m) => <option key={m.id} value={m.id}>[{m.category}] {m.name}</option>)}</select></label>
     </div>
   );
 }
 
 function BuildEditor({ user, profile, modbooks, initialBuild, initialSlots, onClose, onSaved }) {
-  const [form, setForm] = useState({
+  const draftKey = `axe-build-draft-${user?.id || "guest"}`;
+  const initial = useMemo(() => {
+    try {
+      if (!initialBuild) {
+        const saved = localStorage.getItem(draftKey);
+        if (saved) return JSON.parse(saved);
+      }
+    } catch {}
+    return null;
+  }, []);
+
+  const [form, setForm] = useState(initial?.form || {
     title: initialBuild?.title ? `${initialBuild.title} 복제` : "",
     summary: initialBuild?.summary || "",
     description: initialBuild?.description || "",
-    tags: (initialBuild?.tags || []).join(", ")
+    tags: visibleTags(initialBuild?.tags || []).join(", ")
   });
   const [slots, setSlots] = useState(() => {
+    if (initial?.slots) return initial.slots;
     const base = emptySlots();
     (initialSlots || []).forEach((s) => {
       base[s.slot_key] = {
@@ -582,19 +712,23 @@ function BuildEditor({ user, profile, modbooks, initialBuild, initialSlots, onCl
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    if (initialBuild) return;
+    const timer = window.setTimeout(() => {
+      try { localStorage.setItem(draftKey, JSON.stringify({ form, slots })); } catch {}
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [form, slots, initialBuild, draftKey]);
+
   const setField = (k, v) => setForm((prev) => ({ ...prev, [k]: v }));
-  const setSlot = (slotKey, k, v) =>
-    setSlots((prev) => ({
-      ...prev,
-      [slotKey]: { ...prev[slotKey], [k]: v }
-    }));
+  const setSlot = (slotKey, k, v) => setSlots((prev) => ({ ...prev, [slotKey]: { ...prev[slotKey], [k]: v } }));
 
   async function save() {
     if (!form.title.trim()) return setError("세팅 제목을 입력하세요.");
     setSaving(true);
     setError("");
     try {
-      const tags = form.tags.split(",").map((v) => v.trim()).filter(Boolean).slice(0, 8);
+      const tags = form.tags.split(",").map((v) => v.trim()).filter(Boolean).filter((v) => !HIDDEN_TAGS.has(v)).slice(0, 8);
       const { data: build, error: buildError } = await supabase
         .from("builds")
         .insert({
@@ -614,20 +748,16 @@ function BuildEditor({ user, profile, modbooks, initialBuild, initialSlots, onCl
       const slotRows = SLOT_META.map((meta) => ({
         build_id: build.id,
         slot_key: meta.key,
-        prefix_modbook_id: slots[meta.key].prefix_modbook_id
-          ? Number(slots[meta.key].prefix_modbook_id)
-          : null,
-        suffix_modbook_id: slots[meta.key].suffix_modbook_id
-          ? Number(slots[meta.key].suffix_modbook_id)
-          : null,
+        prefix_modbook_id: slots[meta.key].prefix_modbook_id ? Number(slots[meta.key].prefix_modbook_id) : null,
+        suffix_modbook_id: slots[meta.key].suffix_modbook_id ? Number(slots[meta.key].suffix_modbook_id) : null,
         comment: slots[meta.key].comment.trim()
       }));
-
       const { error: slotError } = await supabase.from("build_slots").insert(slotRows);
       if (slotError) {
         await supabase.from("builds").delete().eq("id", build.id);
         throw slotError;
       }
+      try { localStorage.removeItem(draftKey); } catch {}
       onSaved(build);
     } catch (e) {
       setError(e.message || "저장 중 오류가 발생했습니다.");
@@ -638,71 +768,31 @@ function BuildEditor({ user, profile, modbooks, initialBuild, initialSlots, onCl
 
   return (
     <Modal title="추천세팅 작성" onClose={onClose} wide>
-      <div className="form-grid">
-        <label>
-          <span>제목 *</span>
-          <input value={form.title} onChange={(e) => setField("title", e.target.value)} placeholder="예: 이동속도 밸런스 세팅" />
-        </label>
-        <label>
-          <span>한줄 설명</span>
-          <input value={form.summary} onChange={(e) => setField("summary", e.target.value)} placeholder="목표와 특징을 짧게 설명" />
-        </label>
-        <label className="full">
-          <span>상세 설명</span>
-          <textarea value={form.description} onChange={(e) => setField("description", e.target.value)} placeholder="세팅 의도, 장단점, 사용 팁" />
-        </label>
-        <label className="full">
-          <span>태그</span>
-          <input value={form.tags} onChange={(e) => setField("tags", e.target.value)} placeholder="이동속도, 밸런스, 채광 (쉼표로 구분)" />
-        </label>
+      {!initialBuild && <div className="draft-banner"><strong>작성 내용 자동 임시저장</strong><span>브라우저를 닫거나 새로고침해도 작성 중인 내용이 복원됩니다.</span></div>}
+      <div className="form-grid legacy-form-top">
+        <label className="full"><span>제목</span><input value={form.title} onChange={(e) => setField("title", e.target.value)} placeholder="예: 이동속도 1티어 / 무법 생존 세팅" /></label>
+        <label className="full"><span>태그</span><input value={form.tags} onChange={(e) => setField("tags", e.target.value)} placeholder="무법지대, 이동속도, 밸런스 (쉼표 구분)" /></label>
+        <label className="full"><span>설명</span><textarea value={form.description} onChange={(e) => setField("description", e.target.value)} placeholder="이 조합을 추천하는 이유, 실제 사용감, 주의점 등을 적어주세요." /></label>
+        <label className="full compact-summary-field"><span>한줄 요약</span><input value={form.summary} onChange={(e) => setField("summary", e.target.value)} placeholder="목록에서 보일 짧은 설명" /></label>
       </div>
 
-      <div className="editor-slots">
-        {SLOT_META.map((meta) => {
-          const candidates = modbooks.filter((m) => slotAllows(m, meta));
-          const prefixes = candidates.filter((m) => m.type === "접두");
-          const suffixes = candidates.filter((m) => m.type === "접미");
-          return (
-            <article className="editor-slot" key={meta.key}>
-              <div className="slot-title"><span>{meta.label}</span><em>{meta.key.toUpperCase()}</em></div>
-              <label>
-                <span>접두 개조서</span>
-                <select
-                  value={slots[meta.key].prefix_modbook_id}
-                  onChange={(e) => setSlot(meta.key, "prefix_modbook_id", e.target.value)}
-                >
-                  <option value="">선택 없음</option>
-                  {prefixes.map((m) => <option key={m.id} value={m.id}>[{m.category}] {m.name}</option>)}
-                </select>
-              </label>
-              <label>
-                <span>접미 개조서</span>
-                <select
-                  value={slots[meta.key].suffix_modbook_id}
-                  onChange={(e) => setSlot(meta.key, "suffix_modbook_id", e.target.value)}
-                >
-                  <option value="">선택 없음</option>
-                  {suffixes.map((m) => <option key={m.id} value={m.id}>[{m.category}] {m.name}</option>)}
-                </select>
-              </label>
-              <label>
-                <span>부위 코멘트</span>
-                <input
-                  value={slots[meta.key].comment}
-                  onChange={(e) => setSlot(meta.key, "comment", e.target.value)}
-                  placeholder="선택 이유 또는 주의점"
-                />
-              </label>
-            </article>
-          );
-        })}
+      <div className="legacy-editor-grid">
+        {SLOT_META.map((meta) => (
+          <section className="legacy-slot-editor" key={meta.key}>
+            <div className="legacy-slot-head">
+              <div className="slot-thumb"><span>{meta.icon}</span></div>
+              <div><small>장비 부위</small><strong>{meta.label}</strong><span>접두·접미 개조서를 선택합니다.</span></div>
+            </div>
+            <ModifierPicker type="접두" slotMeta={meta} modbooks={modbooks} value={slots[meta.key].prefix_modbook_id} onChange={(v) => setSlot(meta.key, "prefix_modbook_id", v)} />
+            <ModifierPicker type="접미" slotMeta={meta} modbooks={modbooks} value={slots[meta.key].suffix_modbook_id} onChange={(v) => setSlot(meta.key, "suffix_modbook_id", v)} />
+            <label className="slot-comment-editor"><span>부위 설명</span><textarea value={slots[meta.key].comment} onChange={(e) => setSlot(meta.key, "comment", e.target.value)} placeholder="이 부위 조합을 선택한 이유" /></label>
+          </section>
+        ))}
       </div>
 
+      <div className="editor-standard"><strong>작성 기준</strong><span>개조서 수치는 직접 입력하지 않습니다. AXE HUB에 등록된 개조서 옵션을 사용하고 게시글에서는 최대 옵션 기준으로 표시합니다.</span></div>
       {error && <div className="form-error">{error}</div>}
-      <div className="modal-actions sticky">
-        <button className="btn ghost" onClick={onClose}>취소</button>
-        <button className="btn primary" onClick={save} disabled={saving}>{saving ? "저장 중..." : "게시하기"}</button>
-      </div>
+      <div className="modal-actions sticky"><button className="btn ghost" onClick={onClose}>취소</button><button className="btn primary" onClick={save} disabled={saving}>{saving ? "저장 중..." : "게시하기"}</button></div>
     </Modal>
   );
 }
@@ -853,12 +943,10 @@ export default function App() {
   const [selectedSlots, setSelectedSlots] = useState([]);
   const [editor, setEditor] = useState(null);
   const [reportEditor, setReportEditor] = useState(false);
-  const [quickFilter, setQuickFilter] = useState("전체");
+  const [categoryFilter, setCategoryFilter] = useState("전체");
   const [toast, setToast] = useState({ message: "", tone: "default" });
 
   const modMap = useMemo(() => new Map(modbooks.map((m) => [m.id, m])), [modbooks]);
-  const featuredBuild = useMemo(() => builds.find((b) => b.is_official) || builds[0] || null, [builds]);
-  const featuredSlots = featuredBuild ? (buildSlotsMap[featuredBuild.id] || []) : [];
 
   function notify(message, tone = "default") {
     setToast({ message, tone });
@@ -1029,11 +1117,6 @@ export default function App() {
     window.setTimeout(() => document.getElementById("build-archive")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
   }
 
-  function applyQuickFilter(filter) {
-    setTab("builds");
-    setQuickFilter(filter);
-    window.setTimeout(() => document.getElementById("build-archive")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
-  }
 
   if (!isSupabaseConfigured) {
     return (
@@ -1066,15 +1149,11 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`}</pre>
       {tab === "builds" && (
         <>
           <Hero
-            featuredBuild={featuredBuild}
-            featuredSlots={featuredSlots}
-            modMap={modMap}
             user={user}
             onCreate={() => setEditor({ build: null, slots: [] })}
-            onOpenFeatured={() => featuredBuild && openBuild(featuredBuild)}
             onJump={jumpToBuilds}
-            onQuickFilter={applyQuickFilter}
           />
+          <CompanyPromo />
           <BuildsPage
             builds={builds}
             buildSlotsMap={buildSlotsMap}
@@ -1085,8 +1164,8 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`}</pre>
             onOpen={openBuild}
             onFavorite={toggleFavorite}
             onCreate={() => setEditor({ build: null, slots: [] })}
-            quickFilter={quickFilter}
-            setQuickFilter={setQuickFilter}
+            categoryFilter={categoryFilter}
+            setCategoryFilter={setCategoryFilter}
           />
         </>
       )}
