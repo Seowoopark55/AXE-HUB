@@ -12,6 +12,70 @@ const BASE_CATEGORIES = ["전체", "인기", "무법지대", "체력", "이동�
 const LIFE_CATEGORIES = ["벌목", "낚시", "채광", "택배"];
 const HIDDEN_TAGS = new Set(["AXE 추천", "AXE OFFICIAL", "공식", "밸런스"]);
 
+const BUILD_TAG_GROUPS = [
+  { label: "전투 / 핵심", options: ["무법지대", "체력", "이동속도"] },
+  { label: "생활", options: ["생활", "벌목", "낚시", "채광", "택배"] }
+];
+const BUILD_TAG_OPTIONS = BUILD_TAG_GROUPS.flatMap((group) => group.options);
+
+function normalizeBuildTagSelection(value) {
+  const source = Array.isArray(value)
+    ? value
+    : String(value || "").split(",");
+
+  return [...new Set(
+    source
+      .map((tag) => String(tag || "").trim())
+      .filter(Boolean)
+      .filter((tag) => BUILD_TAG_OPTIONS.includes(tag))
+      .filter((tag) => !HIDDEN_TAGS.has(tag))
+  )].slice(0, 8);
+}
+
+const TAB_ROUTES = {
+  home: "/",
+  builds: "/builds",
+  notices: "/notices",
+  presets: "/presets",
+  modbooks: "/modbooks",
+  reports: "/reports",
+  admin: "/admin"
+};
+
+const PAGE_TITLES = {
+  home: "AXE BUILD · HOME",
+  builds: "추천세팅 · AXE BUILD",
+  notices: "공지 · AXE BUILD",
+  presets: "내 프리셋 · AXE BUILD",
+  modbooks: "개조서 · AXE BUILD",
+  reports: "제보 · AXE BUILD",
+  admin: "관리 · AXE BUILD"
+};
+
+function tabFromLocation() {
+  if (typeof window === "undefined") return "builds";
+  const path = String(window.location.pathname || "/")
+    .replace(/\/+$/, "") || "/";
+  if (path === "/") return "home";
+  const matched = Object.entries(TAB_ROUTES).find(([, route]) => route === path);
+  return matched?.[0] || "home";
+}
+
+function categoryFromLocation() {
+  if (typeof window === "undefined") return "전체";
+  const value = new URLSearchParams(window.location.search).get("category") || "전체";
+  return BASE_CATEGORIES.includes(value) ? value : "전체";
+}
+
+function compactPreview(value, maxLength = 52) {
+  const clean = String(value || "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (clean.length <= maxLength) return clean;
+  return `${clean.slice(0, maxLength).trim()}…`;
+}
+
+
 const emptySlots = () =>
   Object.fromEntries(
     SLOT_META.map((slot) => [
@@ -55,6 +119,17 @@ function optionLines(mod) {
     .filter(Boolean)
     .map(normalizeRange);
 }
+
+function modifierDropdownLabel(mod) {
+  const category = mod?.category || "기타";
+  const name = cleanPresetModbookName(mod?.name || "이름 없음");
+  const options = optionLines(mod)
+    .map((line) => String(line).replace(/^\*\s*/, "⚠ "))
+    .join(" · ");
+
+  return `[${category}] ${name}${options ? ` — ${options}` : ""}`;
+}
+
 
 function slotAllows(mod, slot) {
   const parts = String(mod?.parts || "");
@@ -252,19 +327,53 @@ function cleanPresetModbookName(name) {
     .trim();
 }
 
-function sumPresetMovement(mods) {
-  return (mods || []).reduce((total, item) => {
-    const options = [item?.option1, item?.option2, item?.option3]
+function compactPresetStatLabel(label) {
+  const aliases = {
+    "이동 속도 증가": "이속",
+    "최대 체력 증가": "체력",
+    "체력 증가": "체력",
+    "최대 스태미나 증가": "스태미나",
+    "스태미나 증가": "스태미나",
+    "받는 피해 감소": "피감",
+    "대미지 감소": "피감",
+    "방어력 증가": "방어",
+    "회피율 증가": "회피",
+    "치명타 확률 증가": "치확",
+    "치명타 피해 증가": "치피"
+  };
+  if (aliases[label]) return aliases[label];
+  const compact = String(label || "")
+    .replace(/\s+/g, "")
+    .replace(/증가|감소|확률|최대/g, "");
+  return compact.slice(0, 4) || "옵션";
+}
+
+function getPresetRepresentativeStat(mods) {
+  const totals = new Map();
+
+  for (const mod of mods || []) {
+    [mod?.option1, mod?.option2, mod?.option3]
       .filter(Boolean)
-      .map(parsePresetOptionExact);
-    const movement = options.find(
-      (option) =>
-        !option.negative &&
-        option.label === "이동 속도 증가" &&
-        option.value != null
-    );
-    return total + (movement?.value || 0);
-  }, 0);
+      .map(parsePresetOptionExact)
+      .forEach((option) => {
+        if (option.negative || option.value == null || option.unit !== "%" || option.value <= 0) return;
+        const current = totals.get(option.label) || 0;
+        totals.set(option.label, current + option.value);
+      });
+  }
+
+  const ranked = [...totals.entries()]
+    .map(([label, value]) => ({ label, value }))
+    .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label, "ko"));
+
+  if (!ranked.length) return null;
+
+  const best = ranked[0];
+  return {
+    ...best,
+    unit: "%",
+    shortLabel: compactPresetStatLabel(best.label)
+  };
 }
 
 function formatPresetCompactNumber(value) {
@@ -373,17 +482,17 @@ function Header({
   adminPendingCount = 0,
   onLogin,
   onLogout,
-  onCreate,
   onProfile
 }) {
   const displayName = displayProfileName(profile, user);
   return (
     <header className="topbar">
       <div className="shell topbar-inner">
-        <button className="brand-btn" onClick={() => setTab("builds")} aria-label="AXE BUILD 홈">
+        <button className="brand-btn" onClick={() => setTab("home")} aria-label="AXE BUILD 홈">
           <Brand />
         </button>
         <nav className="nav">
+          <button className={cls(tab === "home" && "active")} onClick={() => setTab("home")}>홈</button>
           <button className={cls(tab === "notices" && "active")} onClick={() => setTab("notices")}>공지</button>
           <button className={cls(tab === "builds" && "active")} onClick={() => setTab("builds")}>추천세팅</button>
           {user && <button className={cls(tab === "presets" && "active")} onClick={() => setTab("presets")}>내 프리셋</button>}
@@ -397,8 +506,6 @@ function Header({
           )}
         </nav>
         <div className="header-actions">
-          {user && <button className="btn ghost compact desktop-only" onClick={() => setTab("presets")}>★ 내 프리셋</button>}
-          {user && <button className="btn ghost compact desktop-only" onClick={onCreate}>+ 세팅 작성</button>}
           {user ? (
             <div className="user-chip">
               {profile?.avatar_url ? <img src={profile.avatar_url} alt="" /> : <div className="avatar-fallback">{displayName[0] || "?"}</div>}
@@ -414,7 +521,7 @@ function Header({
   );
 }
 
-function Hero({ user, onCreate, onJump, onPresets }) {
+function Hero({ onJump }) {
   return (
     <section className="hero shell hero-simple">
       <div className="hero-copy">
@@ -426,8 +533,6 @@ function Hero({ user, onCreate, onJump, onPresets }) {
         </p>
         <div className="hero-actions">
           <button className="btn primary" onClick={onJump}>추천세팅 바로 보기</button>
-          {user && <button className="btn ghost" onClick={onPresets}>★ 내 프리셋</button>}
-          {user && <button className="btn ghost" onClick={onCreate}>세팅 작성</button>}
         </div>
       </div>
     </section>
@@ -605,7 +710,7 @@ function NoticeStrip({ announcements, onOpen }) {
     <div className="shell notice-strip" onClick={onOpen} role="button" tabIndex={0}>
       <span className="notice-badge">공지</span>
       <strong>{notice.title}</strong>
-      <p>{notice.body}</p>
+      <p>{compactPreview(notice.body, 52)}</p>
       <em>{fmtDate(notice.created_at)} · 전체보기 →</em>
     </div>
   );
@@ -784,13 +889,18 @@ function FloatingContextPanel({
   const noticeCount = announcements?.length || 0;
 
   const quickItems = [
-    { key: "builds", label: "홈", icon: "⌂", action: onHome },
+    { key: "home", label: "홈", icon: "⌂", action: onHome },
     { key: "notices", label: "공지", icon: "!", action: onNotice, badge: noticeCount > 0 ? Math.min(noticeCount, 9) : null },
     { key: "reports", label: "제보", icon: "✎", action: onReport },
     { key: "presets", label: "내 프리셋", icon: "★", action: onPreset }
   ];
 
   const contextMap = {
+    home: {
+      kicker: "AXE HUB",
+      title: "빌드 공유 시스템",
+      body: "공지, 추천세팅, 개조서 정보와 제보 기능을 한 곳에서 이용할 수 있습니다."
+    },
     builds: {
       kicker: "BUILD STATUS",
       title: "추천세팅 탐색",
@@ -1145,7 +1255,7 @@ function BuildDetail({
     const meta = SLOT_META.find((item) => item.key === slotKey);
     const slot = getSlot(slotKey);
     const mods = getMods(slot);
-    const movement = sumPresetMovement(mods);
+    const representative = getPresetRepresentativeStat(mods);
 
     return (
       <div
@@ -1162,7 +1272,11 @@ function BuildDetail({
             <span>{build.title}</span>
             <strong>{meta?.label || slotKey}</strong>
           </div>
-          {movement > 0 && <b>+{formatPresetCompactNumber(movement)}%</b>}
+          {representative && (
+            <b title={`대표 옵션 · ${representative.label} 최대 합산`}>
+              {representative.shortLabel} +{formatPresetCompactNumber(representative.value)}%
+            </b>
+          )}
         </div>
 
         {mods.map((mod) => <PresetMod mod={mod} key={mod.id} />)}
@@ -1185,7 +1299,7 @@ function BuildDetail({
   const PresetSlot = ({ slotKey }) => {
     const meta = SLOT_META.find((item) => item.key === slotKey);
     const slot = getSlot(slotKey);
-    const movement = sumPresetMovement(getMods(slot));
+    const representative = getPresetRepresentativeStat(getMods(slot));
     const hovered = hoverSlotKey === slotKey;
 
     return (
@@ -1204,7 +1318,11 @@ function BuildDetail({
       >
         <span className="hub-gear-card-v118__frame">
           <img src={meta?.image} alt="" loading="lazy" draggable="false" />
-          {movement > 0 && <em>+{formatPresetCompactNumber(movement)}%</em>}
+          {representative && (
+            <em title={`대표 옵션 · ${representative.label} 최대 합산`}>
+              {representative.shortLabel} +{formatPresetCompactNumber(representative.value)}%
+            </em>
+          )}
         </span>
         <span className="hub-gear-card-v118__label">{meta?.label}</span>
       </button>
@@ -1281,8 +1399,7 @@ function BuildDetail({
 
           <div className="ops-info-preset-article__build-layout">
             <div className="ops-info-preset-inventory ops-info-preset-inventory--article">
-              <div className="ops-info-preset-inventory__bar">
-                <strong>인벤토리</strong>
+              <div className="ops-info-preset-inventory__bar ops-info-preset-inventory__bar--compact">
                 <span>장비 <b>1</b></span>
                 <em>AXE BUILD</em>
               </div>
@@ -1501,7 +1618,9 @@ function ModifierPicker({ type, slotMeta, modbooks, value, onChange }) {
         <span>선택</span>
         <select value={value || ""} onChange={(e) => onChange(e.target.value)}>
           <option value="">선택 안 함</option>
-          {filtered.map((m) => <option key={m.id} value={m.id}>[{m.category}] {m.name}</option>)}
+          {filtered.map((m) => (
+            <option key={m.id} value={m.id}>{modifierDropdownLabel(m)}</option>
+          ))}
         </select>
       </label>
 
@@ -1511,6 +1630,102 @@ function ModifierPicker({ type, slotMeta, modbooks, value, onChange }) {
           {optionLines(selectedMod).map((line, idx) => (
             <span key={`${selectedMod.id}-${idx}`}>{line.replace(/^\*/, "⚠ ")}</span>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BuildTagMultiSelect({ value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const selected = normalizeBuildTagSelection(value);
+
+  const toggle = (tag) => {
+    if (selected.includes(tag)) {
+      onChange(selected.filter((item) => item !== tag));
+      return;
+    }
+    if (selected.length >= 8) return;
+    onChange([...selected, tag]);
+  };
+
+  const remove = (tag) => onChange(selected.filter((item) => item !== tag));
+
+  return (
+    <div className={cls("build-tag-select-v113", open && "is-open")}>
+      <button
+        className="build-tag-select-v113__trigger"
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        aria-expanded={open}
+      >
+        <span>{selected.length ? `${selected.length}개 태그 선택됨` : "태그 선택"}</span>
+        <b>{selected.length}/8</b>
+        <em>⌄</em>
+      </button>
+
+      {selected.length > 0 && (
+        <div className="build-tag-select-v113__chips">
+          {selected.map((tag) => (
+            <button
+              type="button"
+              key={tag}
+              onClick={() => remove(tag)}
+              title={`${tag} 태그 제거`}
+            >
+              <span>#{tag}</span>
+              <b>×</b>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {open && (
+        <div className="build-tag-select-v113__menu">
+          <div className="build-tag-select-v113__menu-head">
+            <div>
+              <span>BUILD TAG</span>
+              <strong>여러 태그를 함께 선택할 수 있습니다.</strong>
+            </div>
+            <small>{selected.length}/8</small>
+          </div>
+
+          {BUILD_TAG_GROUPS.map((group) => (
+            <section className="build-tag-select-v113__group" key={group.label}>
+              <span>{group.label}</span>
+              <div>
+                {group.options.map((tag) => {
+                  const checked = selected.includes(tag);
+                  return (
+                    <button
+                      type="button"
+                      key={tag}
+                      className={cls(checked && "is-selected")}
+                      onClick={() => toggle(tag)}
+                      aria-pressed={checked}
+                    >
+                      <i>{checked ? "✓" : ""}</i>
+                      <b>{tag}</b>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          ))}
+
+          <div className="build-tag-select-v113__menu-foot">
+            <small>‘인기’는 추천·조회 반응으로 자동 분류됩니다.</small>
+            <div>
+              {selected.length > 0 && (
+                <button type="button" className="tag-clear-v113" onClick={() => onChange([])}>
+                  전체 해제
+                </button>
+              )}
+              <button type="button" className="tag-done-v113" onClick={() => setOpen(false)}>
+                완료
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -1542,13 +1757,18 @@ function BuildEditor({
     return null;
   }, [draftKey, isCreate]);
 
-  const [form, setForm] = useState(initial?.form || {
-    title: isClone && initialBuild?.title
-      ? `${initialBuild.title} 복제`
-      : (initialBuild?.title || ""),
-    summary: initialBuild?.summary || "",
-    description: initialBuild?.description || "",
-    tags: visibleTags(initialBuild?.tags || []).join(", ")
+  const restoredForm = initial?.form || {};
+  const [form, setForm] = useState({
+    title: restoredForm.title ?? (
+      isClone && initialBuild?.title
+        ? `${initialBuild.title} 복제`
+        : (initialBuild?.title || "")
+    ),
+    summary: restoredForm.summary ?? (initialBuild?.summary || ""),
+    description: restoredForm.description ?? (initialBuild?.description || ""),
+    tags: normalizeBuildTagSelection(
+      restoredForm.tags ?? visibleTags(initialBuild?.tags || [])
+    )
   });
 
   const [slots, setSlots] = useState(() => {
@@ -1588,12 +1808,7 @@ function BuildEditor({
     setError("");
 
     try {
-      const tags = form.tags
-        .split(",")
-        .map((v) => v.trim())
-        .filter(Boolean)
-        .filter((v) => !HIDDEN_TAGS.has(v))
-        .slice(0, 8);
+      const tags = normalizeBuildTagSelection(form.tags);
 
       const payload = {
         title: form.title.trim(),
@@ -1709,14 +1924,14 @@ function BuildEditor({
             placeholder="예: 이동속도 1티어 / 무법 생존 세팅"
           />
         </label>
-        <label className="full">
+        <div className="full build-tag-field-v113">
           <span>태그</span>
-          <input
+          <BuildTagMultiSelect
             value={form.tags}
-            onChange={(e) => setField("tags", e.target.value)}
-            placeholder="무법지대, 체력, 이동속도, 생활, 벌목, 낚시, 채광, 택배 (쉼표 구분)"
+            onChange={(tags) => setField("tags", tags)}
           />
-        </label>
+          <small>예: 체력 + 이동속도처럼 목적이 겹치는 세팅은 여러 태그를 동시에 선택하세요.</small>
+        </div>
         <label className="full">
           <span>설명</span>
           <textarea
@@ -1922,7 +2137,7 @@ function ReportEditor({ user, modbooks, onClose, onSaved }) {
 }
 
 export default function App() {
-  const [tab, setTab] = useState("builds");
+  const [tab, setTab] = useState(() => tabFromLocation());
   const [session, setSession] = useState(null);
   const user = session?.user || null;
   const [profile, setProfile] = useState(null);
@@ -1946,7 +2161,7 @@ export default function App() {
   const [reportEditor, setReportEditor] = useState(false);
   const [profileModal, setProfileModal] = useState(false);
   const [recruitModal, setRecruitModal] = useState(false);
-  const [categoryFilter, setCategoryFilter] = useState("전체");
+  const [categoryFilter, setCategoryFilter] = useState(() => categoryFromLocation());
   const [adminMode, setAdminMode] = useState("nicknames");
   const [toast, setToast] = useState({ message: "", tone: "default" });
 
@@ -1957,6 +2172,70 @@ export default function App() {
     window.clearTimeout(window.__axeToastTimer);
     window.__axeToastTimer = window.setTimeout(() => setToast({ message: "", tone: "default" }), 3200);
   }
+
+
+  function routeForTab(nextTab, category = categoryFilter) {
+    const path = TAB_ROUTES[nextTab] || TAB_ROUTES.builds;
+    if (nextTab === "builds" && category && category !== "전체") {
+      return `${path}?category=${encodeURIComponent(category)}`;
+    }
+    return path;
+  }
+
+  function navigateTab(nextTab, { replace = false } = {}) {
+    const safeTab = TAB_ROUTES[nextTab] ? nextTab : "builds";
+    const nextUrl = routeForTab(safeTab);
+    setTab(safeTab);
+
+    const currentUrl = `${window.location.pathname}${window.location.search}`;
+    if (currentUrl === nextUrl) return;
+
+    window.history[replace ? "replaceState" : "pushState"](
+      { axeTab: safeTab, category: safeTab === "builds" ? categoryFilter : null },
+      "",
+      nextUrl
+    );
+  }
+
+  function navigateBuildCategory(category) {
+    const safeCategory = BASE_CATEGORIES.includes(category) ? category : "전체";
+    setTab("builds");
+    setCategoryFilter(safeCategory);
+
+    const nextUrl = safeCategory === "전체"
+      ? TAB_ROUTES.builds
+      : `${TAB_ROUTES.builds}?category=${encodeURIComponent(safeCategory)}`;
+
+    const currentUrl = `${window.location.pathname}${window.location.search}`;
+    if (currentUrl === nextUrl) return;
+
+    window.history.pushState(
+      { axeTab: "builds", category: safeCategory },
+      "",
+      nextUrl
+    );
+  }
+
+  useEffect(() => {
+    const onPopState = () => {
+      setTab(tabFromLocation());
+      setCategoryFilter(categoryFromLocation());
+      setSelectedBuild(null);
+      setEditor(null);
+      setReportEditor(false);
+      window.setTimeout(() => window.scrollTo({ top: 0, behavior: "auto" }), 0);
+    };
+
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  useEffect(() => {
+    const pageTitle = PAGE_TITLES[tab] || PAGE_TITLES.builds;
+    document.title = tab === "builds" && categoryFilter !== "전체"
+      ? `${categoryFilter} · ${pageTitle}`
+      : pageTitle;
+  }, [tab, categoryFilter]);
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -2216,7 +2495,7 @@ export default function App() {
   }
 
   function jumpToBuilds() {
-    setTab("builds");
+    navigateTab("builds");
     window.setTimeout(() => document.getElementById("build-archive")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
   }
 
@@ -2241,7 +2520,7 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`}</pre>
     <div className="app">
       <Header
         tab={tab}
-        setTab={setTab}
+        setTab={navigateTab}
         user={user}
         profile={profile}
         adminPendingCount={
@@ -2250,16 +2529,29 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`}</pre>
         }
         onLogin={login}
         onLogout={logout}
-        onCreate={() => setEditor({ build: null, slots: [], mode: "create" })}
         onProfile={() => setProfileModal(true)}
       />
 
-      {tab === "builds" && (
+      {tab === "home" && (
         <>
-          <NoticeStrip announcements={announcements} onOpen={() => setTab("notices")} />
-          <Hero user={user} onCreate={() => setEditor({ build: null, slots: [], mode: "create" })} onJump={jumpToBuilds} onPresets={() => setTab("presets")} />
-          <BuildsPage builds={builds} buildSlotsMap={buildSlotsMap} modMap={modMap} loading={loading} user={user} favorites={favorites} onOpen={openBuild} onFavorite={toggleFavorite} onCreate={() => setEditor({ build: null, slots: [], mode: "create" })} categoryFilter={categoryFilter} setCategoryFilter={setCategoryFilter} />
+          <NoticeStrip announcements={announcements} onOpen={() => navigateTab("notices")} />
+          <Hero onJump={jumpToBuilds} />
         </>
+      )}
+      {tab === "builds" && (
+        <BuildsPage
+          builds={builds}
+          buildSlotsMap={buildSlotsMap}
+          modMap={modMap}
+          loading={loading}
+          user={user}
+          favorites={favorites}
+          onOpen={openBuild}
+          onFavorite={toggleFavorite}
+          onCreate={() => setEditor({ build: null, slots: [], mode: "create" })}
+          categoryFilter={categoryFilter}
+          setCategoryFilter={navigateBuildCategory}
+        />
       )}
       {tab === "presets" && <PresetsPage user={user} builds={builds} buildSlotsMap={buildSlotsMap} modMap={modMap} favorites={favorites} onOpen={openBuild} onFavorite={toggleFavorite} onLogin={login} />}
       {tab === "modbooks" && <ModbooksPage modbooks={modbooks} />}
@@ -2273,7 +2565,7 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`}</pre>
           onAnnouncementDelete={deleteAnnouncement}
           onOpenNicknameAdmin={() => {
             setAdminMode("nicknames");
-            setTab("admin");
+            navigateTab("admin");
           }}
         />
       )}
@@ -2357,18 +2649,18 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`}</pre>
         announcements={announcements}
         user={user}
         onHome={() => {
-          setTab("builds");
+          navigateTab("home");
           window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 30);
         }}
-        onNotice={() => setTab("notices")}
-        onReport={() => setTab("reports")}
-        onPreset={() => user ? setTab("presets") : login()}
+        onNotice={() => navigateTab("notices")}
+        onReport={() => navigateTab("reports")}
+        onPreset={() => user ? navigateTab("presets") : login()}
         onRecruit={() => setRecruitModal(true)}
       />
 
       <Toast message={toast.message} tone={toast.tone} />
 
-      {user && (
+      {user && tab === "builds" && (
         <button className="fab mobile-only" onClick={() => setEditor({ build: null, slots: [], mode: "create" })}>
           +
         </button>
