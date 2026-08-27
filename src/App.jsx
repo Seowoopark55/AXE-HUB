@@ -770,29 +770,114 @@ function FloatingRemote({ announcements, onHome, onNotice, onReport, onPreset })
 }
 
 
-function FloatingPromo() {
+function FloatingContextPanel({
+  tab,
+  announcements,
+  onNotice,
+  onReport,
+  onPreset,
+  onBuilds
+}) {
   const contact = String(import.meta.env.VITE_AXE_CONTACT_URL || "").trim();
+  const latestNotice = announcements?.[0] || null;
 
-  const content = (
-    <>
-      <div className="floating-promo-media">
-        <img src="/assets/axe-recruitment-poster.png" alt="AXE 신규 인원 모집" />
-      </div>
-      <div className="floating-promo-copy">
-        <span>AXE RECRUIT</span>
-        <strong>AXE 인원모집 중</strong>
-        <small>DM 문의 주세요.</small>
-      </div>
-    </>
-  );
+  const panelByTab = {
+    builds: {
+      kicker: "AXE COMPANY",
+      title: "AXE 인원모집 중",
+      body: "편하게 놀고, 할 때는 제대로. 함께 움직일 인원을 기다립니다.",
+      action: contact ? "DM 문의" : "모집 안내",
+      actionType: "contact",
+      image: "/assets/axe-company-banner.png"
+    },
+    presets: {
+      kicker: "MY PRESET",
+      title: "내 프리셋",
+      body: "저장한 추천세팅을 한 곳에서 다시 확인하고 바로 비교할 수 있습니다.",
+      action: "내 프리셋 보기",
+      actionType: "preset",
+      image: "/assets/axe-brand-square.png"
+    },
+    modbooks: {
+      kicker: "MODBOOK DATA",
+      title: "정보가 다르다면?",
+      body: "누락된 개조서나 잘못된 옵션을 발견하면 제보해주세요. 검수 후 반영됩니다.",
+      action: "개조서 제보",
+      actionType: "report",
+      image: "/assets/axe-brand-square.png"
+    },
+    reports: {
+      kicker: "AXE DATA",
+      title: "제보가 DB를 만듭니다.",
+      body: "스크린샷과 함께 정확한 옵션을 남겨주면 AXE HUB의 정보가 더 빨리 완성됩니다.",
+      action: "추천세팅 보기",
+      actionType: "builds",
+      image: "/assets/axe-company-banner.png"
+    },
+    notices: {
+      kicker: "LATEST NOTICE",
+      title: latestNotice?.title || "AXE HUB 공지",
+      body: latestNotice?.body || "업데이트와 이용 안내를 이곳에서 확인할 수 있습니다.",
+      action: "공지 전체보기",
+      actionType: "notice",
+      image: "/assets/axe-company-banner.png"
+    },
+    admin: {
+      kicker: "ADMIN CENTER",
+      title: "AXE HUB 관리",
+      body: "닉네임 승인, 제보 검수, 공지 작성 상태를 확인하세요.",
+      action: "공지 확인",
+      actionType: "notice",
+      image: "/assets/axe-brand-square.png"
+    }
+  };
 
-  return contact ? (
-    <a className="floating-promo-v114" href={contact} target="_blank" rel="noreferrer">
-      {content}
-    </a>
-  ) : (
-    <aside className="floating-promo-v114">
-      {content}
+  const data = panelByTab[tab] || panelByTab.builds;
+
+  const handleAction = () => {
+    if (data.actionType === "contact" && contact) {
+      window.open(contact, "_blank", "noopener,noreferrer");
+      return;
+    }
+    if (data.actionType === "preset") return onPreset();
+    if (data.actionType === "report") return onReport();
+    if (data.actionType === "notice") return onNotice();
+    if (data.actionType === "builds") return onBuilds();
+  };
+
+  return (
+    <aside className={cls("floating-context-v115", `context-${tab}`)}>
+      <div
+        className="floating-context-media"
+        style={{ backgroundImage: `url(${data.image})` }}
+        aria-hidden="true"
+      >
+        <img src="/assets/axe-logo.png" alt="" />
+      </div>
+
+      <div className="floating-context-copy">
+        <span>{data.kicker}</span>
+        <strong>{data.title}</strong>
+        <p>{data.body}</p>
+
+        {tab === "builds" && (
+          <div className="floating-context-points">
+            <em>편한 분위기</em>
+            <em>할 땐 제대로</em>
+            <em>DM 문의</em>
+          </div>
+        )}
+
+        <button className="floating-context-action" onClick={handleAction}>
+          {data.action}
+          <b>→</b>
+        </button>
+      </div>
+
+      <div className="floating-context-foot">
+        <span>AXE HUB</span>
+        <small>PUBLIC BUILD LAB</small>
+      </div>
     </aside>
   );
 }
@@ -2255,7 +2340,17 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`}</pre>
         onReport={() => setTab("reports")}
         onPreset={() => user ? setTab("presets") : login()}
       />
-      <FloatingPromo />
+      <FloatingContextPanel
+        tab={tab}
+        announcements={announcements}
+        onNotice={() => setTab("notices")}
+        onReport={() => setTab("reports")}
+        onPreset={() => user ? setTab("presets") : login()}
+        onBuilds={() => {
+          setTab("builds");
+          window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 30);
+        }}
+      />
 
       <Toast message={toast.message} tone={toast.tone} />
 

@@ -2897,3 +2897,222 @@ select:focus,input:focus,textarea:focus{border-color:rgba(247,183,51,.65);box-sh
     display:none!important;
   }
 }
+
+
+/* =========================================================
+   AXE BUILD v1.1.5
+   - left remote with breathing room
+   - wide contextual right side panel
+   ========================================================= */
+
+/* Give the quick remote a clear 30~32px visual gap from the 1180px shell. */
+.floating-remote-v112{
+  left:max(8px,calc((100vw - 1180px) / 2 - 158px))!important;
+  right:auto!important;
+}
+
+/* Retire the old narrow v1.1.4 promotion. */
+.floating-promo-v114{
+  display:none!important;
+}
+
+/* Right contextual panel: large enough to feel like part of the site,
+   not a tiny floating advertisement. */
+.floating-context-v115{
+  position:fixed;
+  right:max(12px,calc((100vw - 1180px) / 2 - 274px));
+  top:50%;
+  transform:translateY(-50%);
+  z-index:67;
+  width:250px;
+  overflow:hidden;
+  border:1px solid rgba(255,181,46,.19);
+  border-radius:20px;
+  color:#ececee;
+  background:#0d0f12;
+  box-shadow:0 26px 76px rgba(0,0,0,.46);
+}
+
+.floating-context-media{
+  position:relative;
+  height:132px;
+  overflow:hidden;
+  display:flex;
+  align-items:flex-end;
+  padding:15px;
+  background-position:center;
+  background-size:cover;
+  isolation:isolate;
+}
+.floating-context-media:before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  background:
+    linear-gradient(180deg,rgba(6,7,8,.08),rgba(6,7,8,.72)),
+    linear-gradient(90deg,rgba(6,7,8,.18),transparent 70%);
+}
+.floating-context-media:after{
+  content:"";
+  position:absolute;
+  inset:auto -24px -54px 24px;
+  height:110px;
+  z-index:-1;
+  background:radial-gradient(circle,rgba(247,183,51,.20),transparent 67%);
+  filter:blur(16px);
+}
+.floating-context-media img{
+  width:94px;
+  max-height:48px;
+  object-fit:cover;
+  object-position:center;
+  border-radius:7px;
+  opacity:.92;
+  filter:drop-shadow(0 7px 15px rgba(0,0,0,.45));
+}
+
+.floating-context-copy{
+  padding:18px 18px 15px;
+}
+.floating-context-copy>span{
+  display:block;
+  color:var(--gold);
+  font-size:8px;
+  font-weight:1000;
+  letter-spacing:.14em;
+}
+.floating-context-copy>strong{
+  display:block;
+  margin-top:7px;
+  color:#f3f3f4;
+  font-size:20px;
+  line-height:1.25;
+  letter-spacing:-.035em;
+}
+.floating-context-copy>p{
+  margin:9px 0 0;
+  color:#969aa0;
+  font-size:10.5px;
+  line-height:1.68;
+  word-break:keep-all;
+}
+.floating-context-points{
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+  margin-top:13px;
+}
+.floating-context-points em{
+  padding:5px 7px;
+  border:1px solid #2c3035;
+  border-radius:999px;
+  color:#aaaeb4;
+  background:#111316;
+  font-size:7.5px;
+  font-style:normal;
+  font-weight:850;
+}
+.floating-context-action{
+  width:100%;
+  min-height:38px;
+  margin-top:15px;
+  padding:0 11px;
+  border:1px solid rgba(255,181,46,.23);
+  border-radius:9px;
+  color:#e9c36d;
+  background:rgba(255,181,46,.035);
+  font-size:10px;
+  font-weight:950;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  transition:.14s ease;
+}
+.floating-context-action:hover{
+  color:#15110a;
+  background:var(--gold);
+  border-color:var(--gold);
+}
+.floating-context-action b{
+  font-size:15px;
+}
+
+.floating-context-foot{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  min-height:34px;
+  padding:0 14px;
+  border-top:1px solid rgba(255,255,255,.055);
+  color:#62676d;
+  background:#0a0c0e;
+}
+.floating-context-foot span{
+  font-size:8px;
+  font-weight:950;
+  letter-spacing:.1em;
+}
+.floating-context-foot small{
+  font-size:6.5px;
+  letter-spacing:.08em;
+}
+
+/* Each page keeps the same structure but gets a slightly different tone. */
+.floating-context-v115.context-notices,
+.floating-context-v115.context-admin{
+  border-color:rgba(247,183,51,.14);
+}
+.floating-context-v115.context-modbooks{
+  border-color:rgba(99,179,230,.16);
+}
+.floating-context-v115.context-reports{
+  border-color:rgba(230,111,111,.15);
+}
+
+/* Large desktop: both rails frame the content. */
+@media(min-width:1501px){
+  .floating-remote-v112{
+    left:max(8px,calc((100vw - 1180px) / 2 - 158px))!important;
+  }
+  .floating-context-v115{
+    right:max(12px,calc((100vw - 1180px) / 2 - 274px));
+  }
+}
+
+/* Medium desktop: keep the quick rail, hide the big contextual panel
+   before it begins to squeeze the main UI. */
+@media(max-width:1500px) and (min-width:1181px){
+  .floating-remote-v112{
+    left:8px!important;
+    right:auto!important;
+    width:112px!important;
+  }
+  .floating-context-v115{
+    width:210px;
+    right:8px;
+  }
+  .floating-context-copy{
+    padding:15px;
+  }
+  .floating-context-copy>strong{
+    font-size:17px;
+  }
+}
+
+/* At tighter widths the core app wins: contextual panel disappears. */
+@media(max-width:1180px){
+  .floating-context-v115{
+    display:none!important;
+  }
+}
+
+/* Mobile retains the existing bottom remote. */
+@media(max-width:680px){
+  .floating-remote-v112{
+    left:8px!important;
+    right:8px!important;
+  }
+}
