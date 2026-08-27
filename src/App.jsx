@@ -2,11 +2,13 @@ import React, { useEffect, useMemo, useState } from "react";
 import { isSupabaseConfigured, supabase } from "./lib/supabase";
 
 const SLOT_META = [
-  { key: "outer", label: "겉옷", keywords: ["겉옷", "단독상의"] },
-  { key: "top", label: "상의", keywords: ["상의"] },
-  { key: "bottom", label: "하의", keywords: ["하의"] },
-  { key: "shoes", label: "신발", keywords: ["신발"] }
+  { key: "outer", label: "겉옷", icon: "01", keywords: ["겉옷", "단독상의"] },
+  { key: "top", label: "상의", icon: "02", keywords: ["상의"] },
+  { key: "bottom", label: "하의", icon: "03", keywords: ["하의"] },
+  { key: "shoes", label: "신발", icon: "04", keywords: ["신발"] }
 ];
+
+const QUICK_FILTERS = ["전체", "공식", "이동속도", "밸런스", "채광", "전투"];
 
 const emptySlots = () =>
   Object.fromEntries(
@@ -107,7 +109,9 @@ function Header({ tab, setTab, user, profile, onLogin, onLogout, onCreate }) {
   return (
     <header className="topbar">
       <div className="shell topbar-inner">
-        <Brand />
+        <button className="brand-btn" onClick={() => setTab("builds")} aria-label="AXE BUILD 홈">
+          <Brand />
+        </button>
         <nav className="nav">
           <button className={cls(tab === "builds" && "active")} onClick={() => setTab("builds")}>
             추천세팅
@@ -144,7 +148,7 @@ function Header({ tab, setTab, user, profile, onLogin, onLogout, onCreate }) {
             </div>
           ) : (
             <button className="btn discord" onClick={onLogin}>
-              Discord 로그인
+              Discord로 계속하기
             </button>
           )}
         </div>
@@ -153,73 +157,106 @@ function Header({ tab, setTab, user, profile, onLogin, onLogout, onCreate }) {
   );
 }
 
-function Hero({ user, onCreate, setTab }) {
+function Hero({ featuredBuild, featuredSlots, modMap, user, onCreate, onOpenFeatured, onJump, onQuickFilter }) {
+  const slotMod = (slot, side) => {
+    const id = side === "prefix" ? slot?.prefix_modbook_id : slot?.suffix_modbook_id;
+    return modMap.get(id)?.name || "미지정";
+  };
   return (
     <section className="hero shell">
       <div className="hero-copy">
-        <div className="eyebrow gold">AXE COMMUNITY BUILD DATABASE</div>
-        <h1>
-          세팅은 더 빠르게,
-          <br />
-          선택은 더 정확하게.
-        </h1>
+        <div className="eyebrow gold">AXE BUILD · PUBLIC SETTING HUB</div>
+        <h1>원하는 세팅을<br />슬롯 한눈에 비교.</h1>
         <p>
-          검증된 추천세팅을 찾아보고, 원하는 조합을 복제해서 나만의 빌드로 저장하세요.
-          AXE의 개조서 데이터와 커뮤니티 세팅을 한 곳에서 확인할 수 있습니다.
+          추천세팅을 겉옷·상의·하의·신발 슬롯 기준으로 바로 확인하고 필요한 조합만 빠르게 비교하세요.
+          로그인 없이 조회하고, Discord 로그인 후 내 세팅으로 저장할 수 있습니다.
         </p>
         <div className="hero-actions">
-          <button className="btn primary" onClick={() => setTab("builds")}>
-            추천세팅 둘러보기
+          <button className="btn primary" onClick={onJump}>추천세팅 바로 보기</button>
+          <button className="btn ghost" onClick={user ? onCreate : () => onQuickFilter("공식")}>
+            {user ? "내 세팅 만들기" : "공식 세팅 보기"}
           </button>
-          <button className="btn ghost" onClick={user ? onCreate : () => setTab("modbooks")}>
-            {user ? "내 세팅 만들기" : "개조서 찾아보기"}
-          </button>
+        </div>
+        <div className="quick-entry">
+          <span>빠른 탐색</span>
+          <div>
+            {QUICK_FILTERS.slice(1).map((filter) => (
+              <button key={filter} onClick={() => onQuickFilter(filter)}>{filter}</button>
+            ))}
+          </div>
         </div>
       </div>
-      <div className="hero-panel">
-        <div className="hero-panel-top">
-          <span>AXE BUILD</span>
-          <span className="live-dot">LIVE</span>
+
+      <div className="featured-wrap">
+        <div className="featured-card">
+          <div className="featured-head">
+            <div>
+              <span className="featured-kicker">FEATURED BUILD</span>
+              <h3>{featuredBuild?.title || "추천세팅 준비 중"}</h3>
+            </div>
+            {featuredBuild?.is_official && <span className="badge official">AXE OFFICIAL</span>}
+          </div>
+          <div className="featured-tags">
+            {(featuredBuild?.tags || []).slice(0, 4).map((tag) => <span key={tag}>{tag}</span>)}
+          </div>
+          <div className="featured-slots">
+            {SLOT_META.map((meta) => {
+              const slot = (featuredSlots || []).find((v) => v.slot_key === meta.key);
+              return (
+                <div className="hero-slot" key={meta.key}>
+                  <div className="hero-slot-name"><span>{meta.icon}</span><strong>{meta.label}</strong></div>
+                  <div className="hero-slot-mods">
+                    <div><em>접두</em><b>{slotMod(slot, "prefix")}</b></div>
+                    <div><em>접미</em><b>{slotMod(slot, "suffix")}</b></div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="featured-foot">
+            <div><span>작성자</span><strong>{featuredBuild?.author_name || "AXE"}</strong></div>
+            <div><span>즐겨찾기</span><strong>{featuredBuild?.favorite_count || 0}</strong></div>
+            <button className="btn primary compact" onClick={onOpenFeatured} disabled={!featuredBuild}>자세히 보기</button>
+          </div>
         </div>
-        <div className="gear-stack">
-          <div className="gear-row"><span>01</span><strong>겉옷</strong><em>접두 + 접미</em></div>
-          <div className="gear-row"><span>02</span><strong>상의</strong><em>접두 + 접미</em></div>
-          <div className="gear-row"><span>03</span><strong>하의</strong><em>접두 + 접미</em></div>
-          <div className="gear-row"><span>04</span><strong>신발</strong><em>접두 + 접미</em></div>
-        </div>
-        <div className="hero-panel-foot">BUILD · COMPARE · SHARE</div>
       </div>
     </section>
   );
 }
 
-function BuildCard({ build, onOpen, favorite, onFavorite }) {
+function BuildCard({ build, slots, modMap, onOpen, favorite, onFavorite }) {
+  const modName = (id) => modMap.get(id)?.name || "미지정";
   return (
     <article className="build-card" onClick={() => onOpen(build)}>
       <div className="build-card-top">
         <div className="badges">
           {build.is_official && <span className="badge official">AXE OFFICIAL</span>}
-          {(build.tags || []).slice(0, 2).map((tag) => (
-            <span className="badge" key={tag}>{tag}</span>
-          ))}
+          {(build.tags || []).slice(0, 2).map((tag) => <span className="badge" key={tag}>{tag}</span>)}
         </div>
-        <button
-          className={cls("favorite-btn", favorite && "active")}
-          onClick={(e) => {
-            e.stopPropagation();
-            onFavorite(build);
-          }}
-          aria-label="즐겨찾기"
-        >
+        <button className={cls("favorite-btn", favorite && "active")} onClick={(e) => { e.stopPropagation(); onFavorite(build); }} aria-label="즐겨찾기">
           {favorite ? "★" : "☆"}
         </button>
       </div>
-      <h3>{build.title}</h3>
-      <p>{build.summary || "세팅 설명이 없습니다."}</p>
+      <div className="build-title-row">
+        <div><h3>{build.title}</h3><p>{build.summary || "세팅 설명이 없습니다."}</p></div>
+        <span className="open-arrow">→</span>
+      </div>
+      <div className="mini-slot-grid">
+        {SLOT_META.map((meta) => {
+          const slot = (slots || []).find((v) => v.slot_key === meta.key);
+          return (
+            <div className="mini-slot" key={meta.key}>
+              <div className="mini-slot-label"><span>{meta.icon}</span><strong>{meta.label}</strong></div>
+              <div className="mini-slot-values">
+                <span><em>접두</em>{modName(slot?.prefix_modbook_id)}</span>
+                <span><em>접미</em>{modName(slot?.suffix_modbook_id)}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
       <div className="build-meta">
-        <span>{build.author_name || "익명"}</span>
-        <span>★ {build.favorite_count || 0}</span>
-        <span>조회 {build.view_count || 0}</span>
+        <span>{build.author_name || "익명"}</span><span>★ {build.favorite_count || 0}</span><span>조회 {build.view_count || 0}</span>
       </div>
     </article>
   );
@@ -227,84 +264,75 @@ function BuildCard({ build, onOpen, favorite, onFavorite }) {
 
 function BuildsPage({
   builds,
+  buildSlotsMap,
+  modMap,
   loading,
   user,
   favorites,
   onOpen,
   onFavorite,
-  onCreate
+  onCreate,
+  quickFilter,
+  setQuickFilter
 }) {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState("latest");
 
+  const dynamicFilters = useMemo(() => {
+    const tags = [...new Set(builds.flatMap((b) => b.tags || []))];
+    return [...QUICK_FILTERS, ...tags.filter((v) => !QUICK_FILTERS.includes(v)).slice(0, 4)];
+  }, [builds]);
+
   const rows = useMemo(() => {
     let result = builds.filter((b) => {
-      const hay = [
-        b.title,
-        b.summary,
-        b.description,
-        b.author_name,
-        ...(b.tags || [])
-      ].join(" ").toLowerCase();
-      return hay.includes(query.trim().toLowerCase());
+      const hay = [b.title, b.summary, b.description, b.author_name, ...(b.tags || [])].join(" ").toLowerCase();
+      const qOk = hay.includes(query.trim().toLowerCase());
+      const fOk = quickFilter === "전체" || (quickFilter === "공식" && b.is_official) || (b.tags || []).includes(quickFilter) || hay.includes(quickFilter.toLowerCase());
+      return qOk && fOk;
     });
     result = [...result].sort((a, b) => {
-      if (sort === "popular") {
-        return (b.favorite_count || 0) - (a.favorite_count || 0) ||
-          (b.view_count || 0) - (a.view_count || 0);
-      }
+      if (sort === "popular") return (b.favorite_count || 0) - (a.favorite_count || 0) || (b.view_count || 0) - (a.view_count || 0);
       if (sort === "views") return (b.view_count || 0) - (a.view_count || 0);
       return new Date(b.created_at) - new Date(a.created_at);
     });
     return result;
-  }, [builds, query, sort]);
+  }, [builds, query, sort, quickFilter]);
 
   return (
-    <section className="shell section">
+    <section className="shell section" id="build-archive">
       <div className="section-head">
         <div>
           <div className="eyebrow">BUILD ARCHIVE</div>
           <h2>추천세팅</h2>
-          <p>AXE 공식 세팅과 커뮤니티가 공유한 조합을 확인할 수 있습니다.</p>
+          <p>카드를 열기 전에도 장비 슬롯별 접두·접미 조합을 바로 비교할 수 있습니다.</p>
         </div>
         {user && <button className="btn primary" onClick={onCreate}>+ 세팅 작성</button>}
+      </div>
+
+      <div className="filter-strip">
+        {dynamicFilters.map((filter) => (
+          <button key={filter} className={cls(quickFilter === filter && "active")} onClick={() => setQuickFilter(filter)}>{filter}</button>
+        ))}
       </div>
 
       <div className="toolbar">
         <div className="searchbox">
           <span>⌕</span>
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="세팅명, 태그, 작성자 검색"
-          />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="세팅명, 태그, 작성자 검색" />
           {query && <button onClick={() => setQuery("")}>×</button>}
         </div>
         <select value={sort} onChange={(e) => setSort(e.target.value)}>
-          <option value="latest">최신순</option>
-          <option value="popular">즐겨찾기순</option>
-          <option value="views">조회순</option>
+          <option value="latest">최신순</option><option value="popular">즐겨찾기순</option><option value="views">조회순</option>
         </select>
       </div>
 
-      {loading ? (
-        <div className="empty">추천세팅을 불러오는 중...</div>
-      ) : rows.length ? (
+      {loading ? <div className="empty">추천세팅을 불러오는 중...</div> : rows.length ? (
         <div className="build-grid">
           {rows.map((build) => (
-            <BuildCard
-              key={build.id}
-              build={build}
-              onOpen={onOpen}
-              favorite={favorites.has(build.id)}
-              onFavorite={onFavorite}
-            />
+            <BuildCard key={build.id} build={build} slots={buildSlotsMap[build.id] || []} modMap={modMap} onOpen={onOpen} favorite={favorites.has(build.id)} onFavorite={onFavorite} />
           ))}
         </div>
-      ) : (
-        <div className="empty">조건에 맞는 추천세팅이 없습니다.</div>
-      )}
-
+      ) : <div className="empty">조건에 맞는 추천세팅이 없습니다.</div>}
       <Promo />
     </section>
   );
@@ -316,10 +344,10 @@ function Promo() {
     <div className="promo">
       <div>
         <div className="eyebrow gold">AXE COMMUNITY</div>
-        <h3>같이 뛰고, 같이 만들고, 같이 강해진다.</h3>
+        <h3>세팅 정보는 함께 쌓을수록 정확해집니다.</h3>
         <p>
-          AXE BUILD는 외부 공개형 세팅 허브입니다. AXE 모집 포스터를 추가하면 이 영역에
-          함께 노출할 수 있습니다.
+          새로운 개조서, 수정된 수치, 더 좋은 세팅이 있다면 제보로 공유해주세요.
+          검수된 정보는 AXE BUILD에 반영됩니다.
         </p>
       </div>
       {contact && (
@@ -331,25 +359,26 @@ function Promo() {
   );
 }
 
-function ModbookCard({ mod }) {
+function ModbookDetail({ mod }) {
+  if (!mod) return <div className="modbook-detail empty-detail">개조서를 선택하세요.</div>;
   return (
-    <article className="modbook-card">
-      <div className="modbook-head">
+    <aside className="modbook-detail">
+      <div className="detail-labels">
         <span className={cls("type-pill", mod.type === "접두" ? "prefix" : "suffix")}>{mod.type}</span>
-        <span className="category">{mod.category}</span>
-        <span className="rate">{mod.success_rate || "-"}</span>
+        <span className="badge">{mod.category}</span>
+        <span className="rate-chip">{mod.success_rate || "-"}</span>
       </div>
       <h3>{mod.name}</h3>
-      <div className="parts">{mod.parts}</div>
-      <ul>
+      <div className="detail-parts"><span>적용 부위</span><strong>{mod.parts || "-"}</strong></div>
+      <div className="option-stack">
         {optionLines(mod).map((line, idx) => (
-          <li key={idx} className={line.trim().startsWith("*") ? "warning" : ""}>
-            {line.replace(/^\*/, "")}
-          </li>
+          <div key={idx} className={cls("option-line", line.trim().startsWith("*") && "warning")}>
+            <span>{String(idx + 1).padStart(2, "0")}</span><strong>{line.replace(/^\*/, "")}</strong>
+          </div>
         ))}
-      </ul>
-      {mod.note && <p className="note">{mod.note}</p>}
-    </article>
+      </div>
+      {mod.note && <div className="note-box"><span>NOTE</span><p>{mod.note}</p></div>}
+    </aside>
   );
 }
 
@@ -357,87 +386,76 @@ function ModbooksPage({ modbooks }) {
   const [query, setQuery] = useState("");
   const [type, setType] = useState("all");
   const [category, setCategory] = useState("all");
-  const categories = useMemo(
-    () => [...new Set(modbooks.map((m) => m.category).filter(Boolean))].sort(),
-    [modbooks]
-  );
+  const [parts, setParts] = useState("all");
+  const [selectedId, setSelectedId] = useState(null);
+  const categories = useMemo(() => [...new Set(modbooks.map((m) => m.category).filter(Boolean))].sort(), [modbooks]);
 
-  const rows = useMemo(() => {
-    return modbooks.filter((m) => {
-      if (type !== "all" && m.type !== type) return false;
-      if (category !== "all" && m.category !== category) return false;
-      const hay = [m.name, m.parts, m.category, ...optionLines(m)].join(" ").toLowerCase();
-      return hay.includes(query.trim().toLowerCase());
-    });
-  }, [modbooks, query, type, category]);
+  const rows = useMemo(() => modbooks.filter((m) => {
+    if (type !== "all" && m.type !== type) return false;
+    if (category !== "all" && m.category !== category) return false;
+    if (parts !== "all" && !String(m.parts || "").includes(parts)) return false;
+    return [m.name, m.parts, m.category, ...optionLines(m)].join(" ").toLowerCase().includes(query.trim().toLowerCase());
+  }), [modbooks, query, type, category, parts]);
+
+  useEffect(() => {
+    if (!rows.length) return setSelectedId(null);
+    if (!selectedId || !rows.some((m) => m.id === selectedId)) setSelectedId(rows[0].id);
+  }, [rows, selectedId]);
+
+  const selected = rows.find((m) => m.id === selectedId) || null;
 
   return (
     <section className="shell section">
       <div className="section-head">
-        <div>
-          <div className="eyebrow">MODBOOK DATABASE</div>
-          <h2>개조서 도감</h2>
-          <p>추천세팅에 사용되는 개조서 옵션과 적용 부위를 빠르게 찾아볼 수 있습니다.</p>
-        </div>
+        <div><div className="eyebrow">MODBOOK DATABASE</div><h2>개조서 도감</h2><p>왼쪽에서 찾고, 오른쪽에서 옵션을 확인하는 도감형 구조로 정리했습니다.</p></div>
         <div className="stat-chip">{rows.length} / {modbooks.length}</div>
       </div>
       <div className="toolbar multi">
-        <div className="searchbox">
-          <span>⌕</span>
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="개조서명 또는 옵션 검색" />
-          {query && <button onClick={() => setQuery("")}>×</button>}
+        <div className="searchbox"><span>⌕</span><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="개조서명 또는 옵션 검색" />{query && <button onClick={() => setQuery("")}>×</button>}</div>
+        <select value={type} onChange={(e) => setType(e.target.value)}><option value="all">접두/접미 전체</option><option value="접두">접두</option><option value="접미">접미</option></select>
+        <select value={category} onChange={(e) => setCategory(e.target.value)}><option value="all">분류 전체</option>{categories.map((v) => <option key={v} value={v}>{v}</option>)}</select>
+        <select value={parts} onChange={(e) => setParts(e.target.value)}><option value="all">부위 전체</option>{["겉옷","상의","하의","신발","전부위"].map((v) => <option key={v} value={v}>{v}</option>)}</select>
+      </div>
+      <div className="modbook-browser">
+        <div className="modbook-list">
+          {rows.map((mod) => (
+            <button key={mod.id} className={cls("modbook-list-row", selectedId === mod.id && "active")} onClick={() => setSelectedId(mod.id)}>
+              <div><span className={cls("type-dot", mod.type === "접두" ? "prefix" : "suffix")}></span><strong>{mod.name}</strong></div>
+              <div><span>{mod.category}</span><em>{mod.parts}</em></div>
+            </button>
+          ))}
+          {!rows.length && <div className="empty compact-empty">검색 결과가 없습니다.</div>}
         </div>
-        <select value={type} onChange={(e) => setType(e.target.value)}>
-          <option value="all">접두/접미 전체</option>
-          <option value="접두">접두</option>
-          <option value="접미">접미</option>
-        </select>
-        <select value={category} onChange={(e) => setCategory(e.target.value)}>
-          <option value="all">분류 전체</option>
-          {categories.map((v) => <option key={v} value={v}>{v}</option>)}
-        </select>
+        <ModbookDetail mod={selected} />
       </div>
-      <div className="modbook-grid">
-        {rows.map((mod) => <ModbookCard key={mod.id} mod={mod} />)}
-      </div>
-      {!rows.length && <div className="empty">검색 결과가 없습니다.</div>}
     </section>
   );
 }
 
-function ReportsPage({ user, myReports, onNewReport }) {
+function ReportsPage({ user, myReports, onNewReport, onLogin }) {
   return (
     <section className="shell section">
       <div className="section-head">
-        <div>
-          <div className="eyebrow">DATA REPORT</div>
-          <h2>개조서 제보</h2>
-          <p>누락된 개조서나 잘못된 정보를 Discord 로그인 후 제보할 수 있습니다.</p>
-        </div>
+        <div><div className="eyebrow">DATA REPORT</div><h2>개조서 제보</h2><p>누락된 개조서와 잘못된 옵션을 한 곳에서 정리해 제보할 수 있습니다.</p></div>
         {user && <button className="btn primary" onClick={onNewReport}>+ 새 제보</button>}
       </div>
-
+      <div className="report-guide">
+        <div className="guide-card"><span>01</span><strong>누락 제보</strong><p>새로운 개조서가 도감에 없을 때 등록합니다.</p></div>
+        <div className="guide-card"><span>02</span><strong>수정 제보</strong><p>기존 개조서의 수치·부위·옵션이 다를 때 수정 요청합니다.</p></div>
+        <div className="guide-card"><span>03</span><strong>검수 반영</strong><p>관리자 승인 후 개조서 DB에 자동으로 반영됩니다.</p></div>
+      </div>
       {!user ? (
-        <div className="empty strong">
-          Discord 로그인이 필요합니다.
-          <small>로그인 후 누락/수정 제보와 이미지 증빙을 등록할 수 있습니다.</small>
+        <div className="login-gate">
+          <div><div className="eyebrow gold">DISCORD SIGN-IN</div><h3>제보와 세팅 저장에만 로그인이 필요합니다.</h3><p>추천세팅과 개조서는 로그인 없이 볼 수 있습니다. Discord 로그인은 작성자 식별과 개인 데이터 저장에만 사용하며 서버 가입·메시지 접근 권한은 요청하지 않습니다.</p></div>
+          <button className="btn discord" onClick={onLogin}>Discord로 계속하기</button>
         </div>
       ) : myReports.length ? (
         <div className="report-list">
           {myReports.map((r) => (
-            <article className="report-row" key={r.id}>
-              <div>
-                <span className={cls("status", r.status)}>{r.status}</span>
-                <strong>{r.name}</strong>
-                <span>{r.mod_type} · {r.category || "기타"}</span>
-              </div>
-              <time>{fmtDate(r.created_at)}</time>
-            </article>
+            <article className="report-row" key={r.id}><div><span className={cls("status", r.status)}>{r.status}</span><strong>{r.name}</strong><span>{r.mod_type} · {r.category || "기타"}</span></div><time>{fmtDate(r.created_at)}</time></article>
           ))}
         </div>
-      ) : (
-        <div className="empty">아직 등록한 제보가 없습니다.</div>
-      )}
+      ) : <div className="empty">아직 등록한 제보가 없습니다.</div>}
     </section>
   );
 }
@@ -824,6 +842,7 @@ export default function App() {
   const [profile, setProfile] = useState(null);
 
   const [builds, setBuilds] = useState([]);
+  const [buildSlotsMap, setBuildSlotsMap] = useState({});
   const [modbooks, setModbooks] = useState([]);
   const [favorites, setFavorites] = useState(new Set());
   const [myReports, setMyReports] = useState([]);
@@ -834,9 +853,12 @@ export default function App() {
   const [selectedSlots, setSelectedSlots] = useState([]);
   const [editor, setEditor] = useState(null);
   const [reportEditor, setReportEditor] = useState(false);
+  const [quickFilter, setQuickFilter] = useState("전체");
   const [toast, setToast] = useState({ message: "", tone: "default" });
 
   const modMap = useMemo(() => new Map(modbooks.map((m) => [m.id, m])), [modbooks]);
+  const featuredBuild = useMemo(() => builds.find((b) => b.is_official) || builds[0] || null, [builds]);
+  const featuredSlots = featuredBuild ? (buildSlotsMap[featuredBuild.id] || []) : [];
 
   function notify(message, tone = "default") {
     setToast({ message, tone });
@@ -885,12 +907,19 @@ export default function App() {
   }, [profile?.is_admin]);
 
   async function loadBuilds() {
-    const { data, error } = await supabase
-      .from("builds")
-      .select("*")
-      .order("created_at", { ascending: false });
+    const { data, error } = await supabase.from("builds").select("*").order("created_at", { ascending: false });
     if (error) return notify(`추천세팅 로드 실패: ${error.message}`, "error");
-    setBuilds(data || []);
+    const rows = data || [];
+    setBuilds(rows);
+    if (!rows.length) return setBuildSlotsMap({});
+    const { data: slotRows, error: slotError } = await supabase.from("build_slots").select("*").in("build_id", rows.map((b) => b.id)).order("id");
+    if (slotError) return notify(`세팅 슬롯 로드 실패: ${slotError.message}`, "error");
+    const map = {};
+    for (const row of slotRows || []) {
+      if (!map[row.build_id]) map[row.build_id] = [];
+      map[row.build_id].push(row);
+    }
+    setBuildSlotsMap(map);
   }
 
   async function loadModbooks() {
@@ -942,13 +971,13 @@ export default function App() {
 
   async function openBuild(build) {
     setSelectedBuild(build);
-    const { data, error } = await supabase
-      .from("build_slots")
-      .select("*")
-      .eq("build_id", build.id)
-      .order("id");
-    if (error) notify(error.message, "error");
-    setSelectedSlots(data || []);
+    const cached = buildSlotsMap[build.id];
+    if (cached) setSelectedSlots(cached);
+    else {
+      const { data, error } = await supabase.from("build_slots").select("*").eq("build_id", build.id).order("id");
+      if (error) notify(error.message, "error");
+      setSelectedSlots(data || []);
+    }
     supabase.rpc("increment_build_view", { p_build_id: build.id }).then(() => loadBuilds());
   }
 
@@ -995,6 +1024,17 @@ export default function App() {
     await loadAdminReports();
   }
 
+  function jumpToBuilds() {
+    setTab("builds");
+    window.setTimeout(() => document.getElementById("build-archive")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+  }
+
+  function applyQuickFilter(filter) {
+    setTab("builds");
+    setQuickFilter(filter);
+    window.setTimeout(() => document.getElementById("build-archive")?.scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+  }
+
   if (!isSupabaseConfigured) {
     return (
       <div className="config-screen">
@@ -1025,21 +1065,34 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`}</pre>
 
       {tab === "builds" && (
         <>
-          <Hero user={user} onCreate={() => setEditor({ build: null, slots: [] })} setTab={setTab} />
+          <Hero
+            featuredBuild={featuredBuild}
+            featuredSlots={featuredSlots}
+            modMap={modMap}
+            user={user}
+            onCreate={() => setEditor({ build: null, slots: [] })}
+            onOpenFeatured={() => featuredBuild && openBuild(featuredBuild)}
+            onJump={jumpToBuilds}
+            onQuickFilter={applyQuickFilter}
+          />
           <BuildsPage
             builds={builds}
+            buildSlotsMap={buildSlotsMap}
+            modMap={modMap}
             loading={loading}
             user={user}
             favorites={favorites}
             onOpen={openBuild}
             onFavorite={toggleFavorite}
             onCreate={() => setEditor({ build: null, slots: [] })}
+            quickFilter={quickFilter}
+            setQuickFilter={setQuickFilter}
           />
         </>
       )}
       {tab === "modbooks" && <ModbooksPage modbooks={modbooks} />}
       {tab === "reports" && (
-        <ReportsPage user={user} myReports={myReports} onNewReport={() => setReportEditor(true)} />
+        <ReportsPage user={user} myReports={myReports} onNewReport={() => setReportEditor(true)} onLogin={login} />
       )}
       {tab === "admin" && (
         <AdminPage profile={profile} reports={adminReports} onApprove={approve} onReject={reject} />
