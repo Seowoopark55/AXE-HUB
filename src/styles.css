@@ -3997,3 +3997,120 @@ select:focus,input:focus,textarea:focus{border-color:rgba(247,183,51,.65);box-sh
     height:148px;
   }
 }
+
+
+/* ===== V1.1.11 readability pass ===== */
+.notice-list{
+  gap:14px!important;
+}
+.notice-card{
+  padding:22px 24px!important;
+  border-radius:16px!important;
+}
+.notice-card>div>span{
+  font-size:9.5px!important;
+  letter-spacing:.16em!important;
+}
+.notice-card time{
+  font-size:10.5px!important;
+  color:#7f858d!important;
+}
+.notice-card h3{
+  margin:11px 0 10px!important;
+  color:#f2efe8!important;
+  font-size:22px!important;
+  line-height:1.32!important;
+  font-weight:950!important;
+}
+.notice-card p{
+  margin:0!important;
+  color:#c5c9d0!important;
+  font-size:14.5px!important;
+  line-height:1.95!important;
+  letter-spacing:-.01em!important;
+  white-space:pre-wrap!important;
+}
+.notices-page-v113 .section-head h2{
+  font-size:34px!important;
+  line-height:1.18!important;
+}
+.notices-page-v113 .section-head p{
+  max-width:740px!important;
+  color:#a5abb3!important;
+  font-size:14px!important;
+  line-height:1.8!important;
+}
+.notice-compose-head strong{
+  font-size:17px!important;
+}
+.notice-compose-v113>input,
+.notice-compose-v113>textarea{
+  font-size:14px!important;
+}
+.notice-compose-v113>textarea{
+  min-height:130px!important;
+  line-height:1.72!important;
+}
+.notice-compose-actions small{
+  font-size:11px!important;
+}
+
+/* Build detail readability */
+.ops-info-preset-article__head h2{
+  font-size:26px!important;
+  line-height:1.2!important;
+}
+.ops-info-preset-article__meta{
+  gap:12px!important;
+  margin-top:8px!important;
+  color:#8f949b!important;
+  font-size:11px!important;
+}
+.ops-info-preset-article__description{
+  margin:14px 0 18px!important;
+  padding:15px 18px!important;
+  border:1px solid rgba(255,255,255,.06)!important;
+  border-radius:12px!important;
+  background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.012))!important;
+  color:#c4c9cf!important;
+  font-size:14px!important;
+  line-height:1.9!important;
+  letter-spacing:-.01em!important;
+  white-space:pre-wrap!important;
+}
+.ops-info-preset-article__description .is-empty{
+  color:#80868e!important;
+}
+.ops-info-preset-article__tags{
+  gap:7px!important;
+}
+.ops-info-preset-article__tags span{
+  padding:5px 9px!important;
+  font-size:10px!important;
+}
+.build-card p{
+  color:#9ea3aa!important;
+  font-size:13px!important;
+  line-height:1.78!important;
+}
+
+@media (max-width: 900px){
+  .notice-card{
+    padding:18px 18px!important;
+  }
+  .notice-card h3{
+    font-size:19px!important;
+  }
+  .notice-card p{
+    font-size:13px!important;
+    line-height:1.85!important;
+  }
+  .ops-info-preset-article__head h2{
+    font-size:22px!important;
+  }
+  .ops-info-preset-article__description{
+    padding:13px 14px!important;
+    font-size:13px!important;
+    line-height:1.82!important;
+  }
+}
