@@ -4457,3 +4457,263 @@ select:focus,input:focus,textarea:focus{border-color:rgba(247,183,51,.65);box-sh
     justify-content:flex-end;
   }
 }
+
+
+/* =========================================================
+   AXE BUILD v1.1.14
+   BRAND CLEANUP
+   ========================================================= */
+
+/* The AXE logo already says AXE, so the adjacent wordmark only says BUILD. */
+.brand-v114{
+  gap:10px!important;
+}
+.brand-v114 .brand-logo-box{
+  width:58px!important;
+  height:40px!important;
+  border-color:rgba(255,181,46,.18)!important;
+  border-radius:9px!important;
+  background:#0b0d10!important;
+  box-shadow:none!important;
+}
+.brand-v114__copy{
+  display:grid;
+  gap:2px;
+}
+.brand-v114__copy strong{
+  color:#f0f1f2!important;
+  font-size:15px!important;
+  font-weight:950!important;
+  letter-spacing:.16em!important;
+  line-height:1.05!important;
+}
+.brand-v114__copy span{
+  margin:0!important;
+  color:#666d75!important;
+  font-size:8px!important;
+  font-weight:750!important;
+  letter-spacing:.16em!important;
+}
+
+/* Footer removed in v1.1.14. Keep legacy rules inert if cached CSS survives. */
+.footer{
+  display:none!important;
+}
+
+/* Slightly tighten the header now that the brand block is simpler. */
+.topbar-inner{
+  gap:24px!important;
+}
+
+@media(max-width:760px){
+  .brand-v114 .brand-logo-box{
+    width:50px!important;
+    height:36px!important;
+  }
+  .brand-v114__copy span{
+    display:none!important;
+  }
+}
+
+
+/* =========================================================
+   AXE BUILD v1.1.15
+   BUILDER IDENTITY + COMPANY APPROVAL
+   ========================================================= */
+
+/* Header account identity */
+.user-chip-name-v115{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:5px;
+}
+.user-chip-name-v115>strong{
+  min-width:0;
+}
+.user-chip-name-v115>span{
+  max-width:110px;
+  padding:2px 6px;
+  overflow:hidden;
+  border:1px solid rgba(255,181,46,.22);
+  border-radius:999px;
+  color:#d6ad61;
+  background:rgba(255,181,46,.045);
+  font-size:7.5px;
+  font-weight:900;
+  line-height:1.35;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+/* Build-card builder identity: deliberately stronger than the social counters. */
+.build-author-v115{
+  min-height:34px;
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:6px;
+  margin:7px 0 2px;
+}
+.build-author-v115>span{
+  color:#8f6e35;
+  font-size:7.5px;
+  font-weight:1000;
+  letter-spacing:.14em;
+}
+.build-author-v115>strong{
+  color:#e6e8ea;
+  font-size:12.5px;
+  font-weight:950;
+  line-height:1.2;
+}
+.build-author-v115>em,
+.build-author-detail-v115>em,
+.comment-company-v115{
+  max-width:150px;
+  padding:3px 7px;
+  overflow:hidden;
+  border:1px solid rgba(255,181,46,.25);
+  border-radius:999px;
+  color:#dfb563;
+  background:rgba(255,181,46,.055);
+  font-style:normal;
+  font-weight:900;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.build-author-v115>em{
+  font-size:8.5px;
+}
+
+/* Build detail builder identity */
+.build-author-detail-v115{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:7px;
+  margin-top:8px;
+}
+.build-author-detail-v115>span{
+  color:#94723b;
+  font-size:8px;
+  font-weight:950;
+  letter-spacing:.12em;
+}
+.build-author-detail-v115>strong{
+  color:#dfe2e5;
+  font-size:13px;
+  font-weight:950;
+}
+.build-author-detail-v115>em{
+  font-size:9px;
+}
+
+/* Comment identity */
+.comment-meta{
+  flex-wrap:wrap;
+}
+.comment-company-v115{
+  max-width:120px;
+  padding:2px 6px;
+  font-size:7.5px;
+}
+
+/* Profile modal */
+.profile-settings-v115{
+  display:grid;
+  gap:12px;
+}
+.profile-setting-block-v115{
+  padding:14px;
+  border:1px solid #292d31;
+  border-radius:13px;
+  background:#0d1013;
+}
+.profile-setting-block-v115.company-setting-v115{
+  border-color:rgba(255,181,46,.14);
+  background:
+    linear-gradient(135deg,rgba(255,181,46,.025),transparent 40%),
+    #0d1013;
+}
+.profile-setting-title-v115{
+  min-height:38px;
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:10px;
+}
+.profile-setting-title-v115>div{
+  display:grid;
+  gap:2px;
+}
+.profile-setting-title-v115 span{
+  color:#8b6b37;
+  font-size:7.5px;
+  font-weight:950;
+  letter-spacing:.14em;
+}
+.profile-setting-title-v115 strong{
+  color:#ece9e3;
+  font-size:17px;
+}
+.profile-setting-title-v115>small{
+  padding:3px 6px;
+  border:1px solid rgba(255,181,46,.16);
+  border-radius:999px;
+  color:#a98346;
+  font-size:7.5px;
+}
+.company-current-v115{
+  padding:14px;
+  border:1px solid #29292d;
+  border-radius:11px;
+  background:#111113;
+  display:grid;
+  gap:5px;
+}
+.company-current-v115>span{
+  color:#777;
+  font-size:8px;
+}
+.company-current-v115 strong{
+  color:#e5b65c;
+  font-size:16px;
+}
+.company-current-v115 strong.is-empty{
+  color:#6b7178;
+}
+.company-current-v115 small{
+  color:#777e85;
+  font-size:8px;
+  line-height:1.55;
+}
+
+/* Company review admin */
+.company-review-v115{
+  color:#d9af62;
+}
+.admin-tabs{
+  flex-wrap:wrap;
+}
+
+/* Notice context panel should stay descriptive, never reproduce the full post. */
+.context-notices .floating-context-v116__focus p{
+  display:-webkit-box;
+  overflow:hidden;
+  -webkit-box-orient:vertical;
+  -webkit-line-clamp:3;
+}
+
+@media(max-width:680px){
+  .build-author-v115{
+    min-height:30px;
+  }
+  .build-author-v115>strong{
+    font-size:11.5px;
+  }
+  .profile-setting-block-v115{
+    padding:11px;
+  }
+}

@@ -158,12 +158,16 @@ function displayProfileName(profile, user) {
   );
 }
 
+function displayProfileCompany(profile) {
+  return String(profile?.approved_company_name || "").trim();
+}
+
 function socialScore(build) {
   return (build?.like_count || 0) - (build?.dislike_count || 0);
 }
 
 function buildSearchText(build) {
-  return [build?.title, build?.summary, build?.description, build?.author_name, ...visibleTags(build?.tags)]
+  return [build?.title, build?.summary, build?.description, build?.author_name, build?.author_company, ...visibleTags(build?.tags)]
     .filter(Boolean)
     .join(" ")
     .toLowerCase();
@@ -462,13 +466,13 @@ function Modal({ title, children, onClose, wide = false, bare = false, className
 
 function Brand() {
   return (
-    <div className="brand">
+    <div className="brand brand-v114">
       <div className="brand-mark brand-logo-box">
         <img src="/assets/axe-logo.png" alt="AXE 로고" />
       </div>
-      <div>
-        <strong>AXE BUILD</strong>
-        <span>AXE HUB · PUBLIC BUILD LAB</span>
+      <div className="brand-v114__copy">
+        <strong>BUILD</strong>
+        <span>PUBLIC BUILD LAB</span>
       </div>
     </div>
   );
@@ -485,6 +489,7 @@ function Header({
   onProfile
 }) {
   const displayName = displayProfileName(profile, user);
+  const displayCompany = displayProfileCompany(profile);
   return (
     <header className="topbar">
       <div className="shell topbar-inner">
@@ -510,8 +515,11 @@ function Header({
             <div className="user-chip">
               {profile?.avatar_url ? <img src={profile.avatar_url} alt="" /> : <div className="avatar-fallback">{displayName[0] || "?"}</div>}
               <div>
-                <strong>{displayName}</strong>
-                <div className="user-chip-actions"><button onClick={onProfile}>닉네임</button><button onClick={onLogout}>로그아웃</button></div>
+                <div className="user-chip-name-v115">
+                  <strong>{displayName}</strong>
+                  {displayCompany && <span>{displayCompany}</span>}
+                </div>
+                <div className="user-chip-actions"><button onClick={onProfile}>프로필</button><button onClick={onLogout}>로그아웃</button></div>
               </div>
             </div>
           ) : <button className="btn discord" onClick={onLogin}>Discord로 계속하기</button>}
@@ -550,6 +558,11 @@ function BuildCard({ build, slots, modMap, onOpen, favorite, onFavorite }) {
           {favorite ? "★ 프리셋" : "☆ 프리셋"}
         </button>
       </div>
+      <div className="build-author-v115">
+        <span>BUILDER</span>
+        <strong>{build.author_name || "익명"}</strong>
+        {build.author_company && <em>{build.author_company}</em>}
+      </div>
       <div className="build-title-row">
         <div><h3>{build.title}</h3><p>{build.summary || "세팅 설명이 없습니다."}</p></div>
         <span className="open-arrow">→</span>
@@ -572,7 +585,6 @@ function BuildCard({ build, slots, modMap, onOpen, favorite, onFavorite }) {
         })}
       </div>
       <div className="build-meta social-meta">
-        <span>{build.author_name || "익명"}</span>
         <span className="like-stat">▲ {build.like_count || 0}</span>
         <span className="dislike-stat">▼ {build.dislike_count || 0}</span>
         <span>댓글 {build.comment_count || 0}</span>
@@ -732,10 +744,10 @@ function PresetsPage({ user, builds, buildSlotsMap, modMap, favorites, onOpen, o
 function NoticesPage({
   announcements,
   profile,
-  pendingNicknameCount = 0,
+  pendingProfileCount = 0,
   onAnnouncementSave,
   onAnnouncementDelete,
-  onOpenNicknameAdmin
+  onOpenProfileAdmin
 }) {
   const [form, setForm] = useState({ title: "", body: "", is_pinned: false });
   const [saving, setSaving] = useState(false);
@@ -758,13 +770,13 @@ function NoticesPage({
         </div>
 
         {profile?.is_admin ? (
-          <button className="nickname-admin-shortcut" onClick={onOpenNicknameAdmin}>
-            닉네임 승인
-            <span>{pendingNicknameCount}</span>
+          <button className="nickname-admin-shortcut" onClick={onOpenProfileAdmin}>
+            프로필 승인
+            <span>{pendingProfileCount}</span>
           </button>
         ) : (
           <div className="nickname-admin-hidden-note">
-            닉네임 승인 기능은 관리자 계정에서만 표시됩니다.
+            닉네임·회사명 승인 기능은 관리자 계정에서만 표시됩니다.
           </div>
         )}
       </div>
@@ -885,7 +897,6 @@ function FloatingContextPanel({
   onPreset,
   onRecruit
 }) {
-  const latestNotice = announcements?.[0] || null;
   const noticeCount = announcements?.length || 0;
 
   const quickItems = [
@@ -907,9 +918,9 @@ function FloatingContextPanel({
       body: "카테고리별 추천세팅을 빠르게 보고, 원하는 조합은 바로 내 프리셋으로 저장할 수 있습니다."
     },
     notices: {
-      kicker: "LATEST NOTICE",
-      title: latestNotice?.title || "최근 공지",
-      body: latestNotice?.body || "업데이트와 이용 안내를 이곳에서 확인하세요."
+      kicker: "NOTICE CHANNEL",
+      title: "공지사항",
+      body: "AXE BUILD의 업데이트, 이용 안내와 데이터 변경사항을 확인하는 공간입니다."
     },
     reports: {
       kicker: "REPORT DESK",
@@ -929,7 +940,7 @@ function FloatingContextPanel({
     admin: {
       kicker: "ADMIN CENTER",
       title: "관리 작업",
-      body: "공지, 닉네임 승인, 제보 검수를 이 영역에서 빠르게 확인할 수 있습니다."
+      body: "공지, 닉네임·회사명 승인, 제보 검수를 이 영역에서 빠르게 확인할 수 있습니다."
     }
   };
 
@@ -998,9 +1009,21 @@ function RecruitPosterModal({ onClose }) {
   );
 }
 
-function ProfileModal({ user, profile, request, onClose, onRequest }) {
+function ProfileModal({
+  user,
+  profile,
+  request,
+  companyRequest,
+  onClose,
+  onRequest,
+  onCompanyRequest
+}) {
   const [name, setName] = useState("");
+  const [company, setCompany] = useState("");
   const [saving, setSaving] = useState(false);
+  const [companySaving, setCompanySaving] = useState(false);
+  const currentCompany = displayProfileCompany(profile);
+
   const submit = async () => {
     if (!name.trim()) return;
     setSaving(true);
@@ -1008,15 +1031,107 @@ function ProfileModal({ user, profile, request, onClose, onRequest }) {
     setSaving(false);
     setName("");
   };
+
+  const submitCompany = async () => {
+    if (!company.trim()) return;
+    setCompanySaving(true);
+    await onCompanyRequest(company.trim());
+    setCompanySaving(false);
+    setCompany("");
+  };
+
   return (
-    <Modal title="닉네임 설정" onClose={onClose}>
-      <div className="nickname-panel">
-        <div className="nickname-current"><span>현재 표시 이름</span><strong>{displayProfileName(profile, user)}</strong><small>{profile?.approved_nickname ? "관리자 승인 닉네임" : "Discord 표시 이름"}</small></div>
-        <div className="nickname-explain"><strong>닉네임은 신청/승인제로 운영합니다.</strong><p>타인 사칭과 혼동을 줄이기 위해 신청 후 관리자가 확인합니다. 승인되면 이후 작성글과 댓글에 해당 닉네임이 표시됩니다.</p></div>
-        {request?.status === "pending" && <div className="nickname-status pending"><span>승인 대기</span><strong>{request.requested_name}</strong></div>}
-        {request?.status === "rejected" && <div className="nickname-status rejected"><span>최근 신청 반려</span><strong>{request.requested_name}</strong><p>{request.admin_note || "관리자 메모 없음"}</p></div>}
-        <label className="nickname-input"><span>신청할 닉네임</span><input value={name} maxLength={16} onChange={(e) => setName(e.target.value)} placeholder="2~16자" /></label>
-        <div className="modal-actions inline-actions"><button className="btn primary" onClick={submit} disabled={saving}>{saving ? "신청 중..." : "닉네임 신청"}</button></div>
+    <Modal title="프로필 설정" onClose={onClose}>
+      <div className="nickname-panel profile-settings-v115">
+        <section className="profile-setting-block-v115">
+          <div className="profile-setting-title-v115">
+            <div>
+              <span>DISPLAY NAME</span>
+              <strong>닉네임</strong>
+            </div>
+            <small>승인제</small>
+          </div>
+
+          <div className="nickname-current">
+            <span>현재 표시 이름</span>
+            <strong>{displayProfileName(profile, user)}</strong>
+            <small>{profile?.approved_nickname ? "관리자 승인 닉네임" : "Discord 표시 이름"}</small>
+          </div>
+
+          <div className="nickname-explain">
+            <strong>닉네임은 신청/승인제로 운영합니다.</strong>
+            <p>타인 사칭과 혼동을 줄이기 위해 신청 후 관리자가 확인합니다. 승인되면 작성글과 댓글에 해당 닉네임이 표시됩니다.</p>
+          </div>
+
+          {request?.status === "pending" && (
+            <div className="nickname-status pending">
+              <span>승인 대기</span><strong>{request.requested_name}</strong>
+            </div>
+          )}
+          {request?.status === "rejected" && (
+            <div className="nickname-status rejected">
+              <span>최근 신청 반려</span>
+              <strong>{request.requested_name}</strong>
+              <p>{request.admin_note || "관리자 메모 없음"}</p>
+            </div>
+          )}
+
+          <label className="nickname-input">
+            <span>신청할 닉네임</span>
+            <input value={name} maxLength={16} onChange={(e) => setName(e.target.value)} placeholder="2~16자" />
+          </label>
+          <div className="modal-actions inline-actions">
+            <button className="btn primary" onClick={submit} disabled={saving}>
+              {saving ? "신청 중..." : "닉네임 신청"}
+            </button>
+          </div>
+        </section>
+
+        <section className="profile-setting-block-v115 company-setting-v115">
+          <div className="profile-setting-title-v115">
+            <div>
+              <span>COMPANY TAG</span>
+              <strong>회사명</strong>
+            </div>
+            <small>승인제</small>
+          </div>
+
+          <div className="company-current-v115">
+            <span>현재 회사명</span>
+            <div>
+              {currentCompany ? <strong>{currentCompany}</strong> : <strong className="is-empty">미등록</strong>}
+            </div>
+            <small>승인되면 빌드 작성자 닉네임 옆에 회사 태그로 표시됩니다.</small>
+          </div>
+
+          <div className="nickname-explain">
+            <strong>회사명도 신청 후 관리자가 확인합니다.</strong>
+            <p>동일 회사의 여러 구성원이 같은 회사명을 사용할 수 있습니다. 허위 소속 표기를 방지하기 위해 승인제로 운영합니다.</p>
+          </div>
+
+          {companyRequest?.status === "pending" && (
+            <div className="nickname-status pending">
+              <span>회사명 승인 대기</span><strong>{companyRequest.requested_company}</strong>
+            </div>
+          )}
+          {companyRequest?.status === "rejected" && (
+            <div className="nickname-status rejected">
+              <span>최근 회사명 신청 반려</span>
+              <strong>{companyRequest.requested_company}</strong>
+              <p>{companyRequest.admin_note || "관리자 메모 없음"}</p>
+            </div>
+          )}
+
+          <label className="nickname-input">
+            <span>신청할 회사명</span>
+            <input value={company} maxLength={24} onChange={(e) => setCompany(e.target.value)} placeholder="2~24자 · 예: AXE" />
+          </label>
+          <div className="modal-actions inline-actions">
+            <button className="btn primary" onClick={submitCompany} disabled={companySaving}>
+              {companySaving ? "신청 중..." : "회사명 신청"}
+            </button>
+          </div>
+        </section>
       </div>
     </Modal>
   );
@@ -1119,11 +1234,13 @@ function AdminPage({
   profile,
   reports,
   nicknameRequests,
+  companyRequests,
   announcements,
   initialMode = "nicknames",
   onApprove,
   onReject,
   onNicknameReview,
+  onCompanyReview,
   onAnnouncementSave,
   onAnnouncementDelete
 }) {
@@ -1136,6 +1253,7 @@ function AdminPage({
   if (!profile?.is_admin) return <section className="shell section"><div className="empty">관리자 권한이 없습니다.</div></section>;
   const pending = reports.filter((r) => r.status === "pending");
   const pendingNames = nicknameRequests.filter((r) => r.status === "pending");
+  const pendingCompanies = companyRequests.filter((r) => r.status === "pending");
   const saveNotice = async () => {
     if (!noticeForm.title.trim() || !noticeForm.body.trim()) return;
     await onAnnouncementSave(noticeForm);
@@ -1143,16 +1261,44 @@ function AdminPage({
   };
   return (
     <section className="shell section admin-page">
-      <div className="section-head"><div><div className="eyebrow">AXE HUB ADMIN</div><h2>관리 센터</h2><p>제보 검수, 닉네임 승인, 공지사항을 한 곳에서 관리합니다.</p></div></div>
+      <div className="section-head"><div><div className="eyebrow">AXE HUB ADMIN</div><h2>관리 센터</h2><p>제보 검수, 닉네임·회사명 승인, 공지사항을 한 곳에서 관리합니다.</p></div></div>
       <div className="admin-tabs">
         <button className={cls(mode === "reports" && "active")} onClick={() => setMode("reports")}>개조서 제보 <span>{pending.length}</span></button>
         <button className={cls(mode === "nicknames" && "active")} onClick={() => setMode("nicknames")}>닉네임 신청 <span>{pendingNames.length}</span></button>
+        <button className={cls(mode === "companies" && "active")} onClick={() => setMode("companies")}>회사명 신청 <span>{pendingCompanies.length}</span></button>
         <button className={cls(mode === "notices" && "active")} onClick={() => setMode("notices")}>공지사항 <span>{announcements.length}</span></button>
       </div>
       {mode === "reports" && <div className="admin-list">{pending.map((r) => <article className="admin-card" key={r.id}><div className="admin-card-head"><div><span className="status pending">pending</span><h3>{r.name}</h3></div><span>{r.mod_type} · {r.category || "기타"}</span></div><dl><div><dt>부위</dt><dd>{r.parts || "-"}</dd></div><div><dt>옵션</dt><dd className="preline">{r.options_text || "-"}</dd></div><div><dt>메모</dt><dd>{r.note || "-"}</dd></div></dl><div className="admin-actions"><button className="btn ghost" onClick={() => onReject(r)}>반려</button><button className="btn primary" onClick={() => onApprove(r)}>승인</button></div></article>)}</div>}
       {mode === "reports" && !pending.length && <div className="empty">대기 중인 개조서 제보가 없습니다.</div>}
       {mode === "nicknames" && <div className="admin-list">{pendingNames.map((r) => <article className="admin-card nickname-admin-card" key={r.id}><div className="admin-card-head"><div><span className="status pending">pending</span><h3>{r.current_name || "Discord 사용자"} <span className="nickname-arrow">→</span> {r.requested_name}</h3></div><span>{fmtDate(r.created_at)}</span></div><p className="nickname-review-explain">승인하면 이후 추천세팅·댓글·제보에서 이 닉네임이 표시됩니다.</p><div className="admin-actions"><button className="btn ghost" onClick={() => onNicknameReview(r, false)}>반려</button><button className="btn primary" onClick={() => onNicknameReview(r, true)}>승인</button></div></article>)}</div>}
       {mode === "nicknames" && !pendingNames.length && <div className="empty">대기 중인 닉네임 신청이 없습니다.</div>}
+      {mode === "companies" && (
+        <div className="admin-list">
+          {pendingCompanies.map((r) => (
+            <article className="admin-card nickname-admin-card company-admin-card-v115" key={r.id}>
+              <div className="admin-card-head">
+                <div>
+                  <span className="status pending">pending</span>
+                  <h3>
+                    {r.current_name || "Discord 사용자"}
+                    <span className="nickname-arrow"> · </span>
+                    <span className="company-review-v115">
+                      {r.current_company || "회사 미등록"} <span className="nickname-arrow">→</span> {r.requested_company}
+                    </span>
+                  </h3>
+                </div>
+                <span>{fmtDate(r.created_at)}</span>
+              </div>
+              <p className="nickname-review-explain">승인하면 추천세팅 작성자의 닉네임 옆에 회사 태그가 표시됩니다.</p>
+              <div className="admin-actions">
+                <button className="btn ghost" onClick={() => onCompanyReview(r, false)}>반려</button>
+                <button className="btn primary" onClick={() => onCompanyReview(r, true)}>승인</button>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+      {mode === "companies" && !pendingCompanies.length && <div className="empty">대기 중인 회사명 신청이 없습니다.</div>}
       {mode === "notices" && <><div className="notice-admin-form"><input value={noticeForm.title} onChange={(e) => setNoticeForm((p) => ({ ...p, title: e.target.value }))} placeholder="공지 제목" /><textarea value={noticeForm.body} onChange={(e) => setNoticeForm((p) => ({ ...p, body: e.target.value }))} placeholder="공지 내용" /><label><input type="checkbox" checked={noticeForm.is_pinned} onChange={(e) => setNoticeForm((p) => ({ ...p, is_pinned: e.target.checked }))} /> 상단 고정</label><button className="btn primary" onClick={saveNotice}>공지 등록</button></div><div className="notice-list admin-notice-list">{announcements.map((n) => <article className="notice-card" key={n.id}><div><span>{n.is_pinned ? "PINNED" : "NOTICE"}</span><button className="text-danger" onClick={() => onAnnouncementDelete(n)}>삭제</button></div><h3>{n.title}</h3><p>{n.body}</p></article>)}</div></>}
     </section>
   );
@@ -1345,8 +1491,12 @@ function BuildDetail({
                 {build.author_id ? "MEMBER BUILD" : "BUILD"}
               </span>
               <h2>{build.title}</h2>
+              <div className="build-author-detail-v115">
+                <span>BUILDER</span>
+                <strong>{build.author_name || "AXE"}</strong>
+                {build.author_company && <em>{build.author_company}</em>}
+              </div>
               <div className="ops-info-preset-article__meta">
-                <span>{build.author_name || "AXE"}</span>
                 <span>{fmtDate(build.updated_at || build.created_at)}</span>
                 <span>★ {build.favorite_count || 0}</span>
                 <span>조회 {build.view_count || 0}</span>
@@ -1540,6 +1690,7 @@ function BuildDetail({
                 <article className="comment-row" key={comment.id}>
                   <div className="comment-meta">
                     <strong>{comment.author_name}</strong>
+                    {comment.author_company && <em className="comment-company-v115">{comment.author_company}</em>}
                     <span>{fmtDate(comment.created_at)}</span>
                   </div>
                   <p>{comment.body}</p>
@@ -1867,6 +2018,7 @@ function BuildEditor({
             ...payload,
             author_id: user.id,
             author_name: displayProfileName(profile, user),
+            author_company: displayProfileCompany(profile) || null,
             is_official: false
           })
           .select("*")
@@ -2151,7 +2303,9 @@ export default function App() {
   const [userVotes, setUserVotes] = useState(new Map());
   const [announcements, setAnnouncements] = useState([]);
   const [nicknameRequest, setNicknameRequest] = useState(null);
+  const [companyRequest, setCompanyRequest] = useState(null);
   const [adminNicknameRequests, setAdminNicknameRequests] = useState([]);
+  const [adminCompanyRequests, setAdminCompanyRequests] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [selectedBuild, setSelectedBuild] = useState(null);
@@ -2307,18 +2461,20 @@ export default function App() {
   }
 
   async function loadUserData(userId) {
-    const [{ data: p }, { data: fav }, { data: reports }, { data: votes }, { data: nick }] = await Promise.all([
+    const [{ data: p }, { data: fav }, { data: reports }, { data: votes }, { data: nick }, { data: company }] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
       supabase.from("favorites").select("build_id").eq("user_id", userId),
       supabase.from("modbook_reports").select("*").eq("reporter_id", userId).order("created_at", { ascending: false }),
       supabase.from("build_votes").select("build_id,value").eq("user_id", userId),
-      supabase.from("nickname_requests").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle()
+      supabase.from("nickname_requests").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle(),
+      supabase.from("company_requests").select("*").eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle()
     ]);
     setProfile(p || null);
     setFavorites(new Set((fav || []).map((f) => f.build_id)));
     setMyReports(reports || []);
     setUserVotes(new Map((votes || []).map((v) => [v.build_id, v.value])));
     setNicknameRequest(nick || null);
+    setCompanyRequest(company || null);
   }
 
   async function loadAnnouncements() {
@@ -2328,15 +2484,22 @@ export default function App() {
   }
 
   async function loadAdminData() {
-    const [{ data: reports, error: reportError }, { data: names, error: nameError }, { data: notices, error: noticeError }] = await Promise.all([
+    const [
+      { data: reports, error: reportError },
+      { data: names, error: nameError },
+      { data: companies, error: companyError },
+      { data: notices, error: noticeError }
+    ] = await Promise.all([
       supabase.from("modbook_reports").select("*").order("created_at", { ascending: false }),
       supabase.from("nickname_requests").select("*").order("created_at", { ascending: false }),
+      supabase.from("company_requests").select("*").order("created_at", { ascending: false }),
       supabase.from("announcements").select("*").order("is_pinned", { ascending: false }).order("created_at", { ascending: false })
     ]);
-    const error = reportError || nameError || noticeError;
+    const error = reportError || nameError || companyError || noticeError;
     if (error) return notify(error.message, "error");
     setAdminReports(reports || []);
     setAdminNicknameRequests(names || []);
+    setAdminCompanyRequests(companies || []);
     setAnnouncements(notices || []);
   }
 
@@ -2401,7 +2564,13 @@ export default function App() {
 
   async function addComment(body) {
     if (!user || !selectedBuild) return login();
-    const { error } = await supabase.from("build_comments").insert({ build_id: selectedBuild.id, user_id: user.id, author_name: displayProfileName(profile, user), body });
+    const { error } = await supabase.from("build_comments").insert({
+      build_id: selectedBuild.id,
+      user_id: user.id,
+      author_name: displayProfileName(profile, user),
+      author_company: displayProfileCompany(profile) || null,
+      body
+    });
     if (error) return notify(`댓글 등록 실패: ${error.message}`, "error");
     await openBuild(selectedBuild, false);
     await loadBuilds();
@@ -2426,6 +2595,28 @@ export default function App() {
     const { error } = await supabase.rpc("review_nickname_request", { p_request_id: request.id, p_approve: approveValue, p_admin_note: note });
     if (error) return notify(`닉네임 처리 실패: ${error.message}`, "error");
     notify(approveValue ? "닉네임을 승인했습니다." : "닉네임 신청을 반려했습니다.");
+    await loadAdminData();
+    if (user) await loadUserData(user.id);
+    await loadBuilds();
+  }
+
+
+  async function requestCompanyName(companyName) {
+    const { error } = await supabase.rpc("request_company_name", { p_requested_company: companyName });
+    if (error) return notify(`회사명 신청 실패: ${error.message}`, "error");
+    notify("회사명 신청을 접수했습니다.");
+    await loadUserData(user.id);
+  }
+
+  async function reviewCompany(request, approveValue) {
+    const note = approveValue ? null : (window.prompt("반려 사유를 입력하세요. (선택)") || null);
+    const { error } = await supabase.rpc("review_company_request", {
+      p_request_id: request.id,
+      p_approve: approveValue,
+      p_admin_note: note
+    });
+    if (error) return notify(`회사명 처리 실패: ${error.message}`, "error");
+    notify(approveValue ? "회사명을 승인했습니다." : "회사명 신청을 반려했습니다.");
     await loadAdminData();
     if (user) await loadUserData(user.id);
     await loadBuilds();
@@ -2525,6 +2716,7 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`}</pre>
         profile={profile}
         adminPendingCount={
           adminNicknameRequests.filter((r) => r.status === "pending").length +
+          adminCompanyRequests.filter((r) => r.status === "pending").length +
           adminReports.filter((r) => r.status === "pending").length
         }
         onLogin={login}
@@ -2560,11 +2752,15 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`}</pre>
         <NoticesPage
           announcements={announcements}
           profile={profile}
-          pendingNicknameCount={adminNicknameRequests.filter((r) => r.status === "pending").length}
+          pendingProfileCount={
+            adminNicknameRequests.filter((r) => r.status === "pending").length +
+            adminCompanyRequests.filter((r) => r.status === "pending").length
+          }
           onAnnouncementSave={saveAnnouncement}
           onAnnouncementDelete={deleteAnnouncement}
-          onOpenNicknameAdmin={() => {
-            setAdminMode("nicknames");
+          onOpenProfileAdmin={() => {
+            const hasCompanyPending = adminCompanyRequests.some((r) => r.status === "pending");
+            setAdminMode(hasCompanyPending ? "companies" : "nicknames");
             navigateTab("admin");
           }}
         />
@@ -2574,22 +2770,17 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`}</pre>
           profile={profile}
           reports={adminReports}
           nicknameRequests={adminNicknameRequests}
+          companyRequests={adminCompanyRequests}
           announcements={announcements}
           initialMode={adminMode}
           onApprove={approve}
           onReject={reject}
           onNicknameReview={reviewNickname}
+          onCompanyReview={reviewCompany}
           onAnnouncementSave={saveAnnouncement}
           onAnnouncementDelete={deleteAnnouncement}
         />
       )}
-
-      <footer className="footer">
-        <div className="shell">
-          <Brand />
-          <span>AXE HUB · External Public Service</span>
-        </div>
-      </footer>
 
       {selectedBuild && (
         <BuildDetail
@@ -2641,7 +2832,17 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`}</pre>
         />
       )}
 
-      {profileModal && user && <ProfileModal user={user} profile={profile} request={nicknameRequest} onClose={() => setProfileModal(false)} onRequest={requestNickname} />}
+      {profileModal && user && (
+        <ProfileModal
+          user={user}
+          profile={profile}
+          request={nicknameRequest}
+          companyRequest={companyRequest}
+          onClose={() => setProfileModal(false)}
+          onRequest={requestNickname}
+          onCompanyRequest={requestCompanyName}
+        />
+      )}
 
       {recruitModal && <RecruitPosterModal onClose={() => setRecruitModal(false)} />}
       <FloatingContextPanel

@@ -1,0 +1,18 @@
+AXE HUB · AXE BUILD V1.1.14
+=================================
+
+[브랜드 정돈]
+- 헤더 AXE 로고 옆 텍스트:
+  AXE BUILD → BUILD
+- 보조 문구:
+  AXE HUB · PUBLIC BUILD LAB → PUBLIC BUILD LAB
+
+AXE 로고 자체에 AXE가 들어 있기 때문에
+화면에서는 [AXE 로고] + BUILD 형태로 자연스럽게 AXE BUILD가 완성됩니다.
+
+[하단]
+- 중복된 AXE BUILD footer 제거
+- 'AXE HUB · External Public Service' 문구 제거
+- footer가 차지하던 큰 하단 여백 제거
+
+Supabase / SQL 변경 없음.
