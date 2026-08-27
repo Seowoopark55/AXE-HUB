@@ -652,11 +652,15 @@ function NoticesPage({
           <p>변경사항, 이용 안내, 데이터 업데이트 소식을 확인할 수 있습니다.</p>
         </div>
 
-        {profile?.is_admin && (
+        {profile?.is_admin ? (
           <button className="nickname-admin-shortcut" onClick={onOpenNicknameAdmin}>
             닉네임 승인
             <span>{pendingNicknameCount}</span>
           </button>
+        ) : (
+          <div className="nickname-admin-hidden-note">
+            닉네임 승인 기능은 관리자 계정에서만 표시됩니다.
+          </div>
         )}
       </div>
 
@@ -761,6 +765,34 @@ function FloatingRemote({ announcements, onHome, onNotice, onReport, onPreset })
           <b>내 프리셋</b>
         </button>
       </div>
+    </aside>
+  );
+}
+
+
+function FloatingPromo() {
+  const contact = String(import.meta.env.VITE_AXE_CONTACT_URL || "").trim();
+
+  const content = (
+    <>
+      <div className="floating-promo-media">
+        <img src="/assets/axe-recruitment-poster.png" alt="AXE 신규 인원 모집" />
+      </div>
+      <div className="floating-promo-copy">
+        <span>AXE RECRUIT</span>
+        <strong>AXE 인원모집 중</strong>
+        <small>DM 문의 주세요.</small>
+      </div>
+    </>
+  );
+
+  return contact ? (
+    <a className="floating-promo-v114" href={contact} target="_blank" rel="noreferrer">
+      {content}
+    </a>
+  ) : (
+    <aside className="floating-promo-v114">
+      {content}
     </aside>
   );
 }
@@ -2223,6 +2255,7 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`}</pre>
         onReport={() => setTab("reports")}
         onPreset={() => user ? setTab("presets") : login()}
       />
+      <FloatingPromo />
 
       <Toast message={toast.message} tone={toast.tone} />
 
