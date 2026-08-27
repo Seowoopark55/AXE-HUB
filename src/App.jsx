@@ -866,31 +866,30 @@ function RecruitPosterModal({ onClose }) {
   const contact = String(import.meta.env.VITE_AXE_CONTACT_URL || "").trim();
 
   return (
-    <Modal title="AXE 신규 인원 모집" onClose={onClose} wide className="recruit-poster-modal-v116">
-      <div className="recruit-poster-modal__body">
-        <div className="recruit-poster-modal__poster">
-          <img src="/assets/axe-recruitment-poster.png" alt="AXE 신규 인원 모집 포스터" />
-        </div>
+    <Modal
+      title="AXE 신규 인원 모집"
+      onClose={onClose}
+      className="recruit-poster-modal-v117"
+    >
+      <div className="recruit-poster-modal-v117__body">
+        <img
+          className="recruit-poster-modal-v117__image"
+          src="/assets/axe-recruitment-poster.png"
+          alt="AXE 신규 인원 모집 포스터"
+        />
 
-        <div className="recruit-poster-modal__side">
-          <span>AXE RECRUIT</span>
-          <strong>AXE 인원모집 중</strong>
-          <p>편한 분위기에서 자유롭게 지낼 수 있지만, 놀 땐 놀고 일할 땐 하는 AXE의 분위기를 소개하는 모집 안내입니다.</p>
-          <ul>
-            <li>총싸움 좋아하는 분</li>
-            <li>일 열심히 하는 분</li>
-            <li>사람 좋고 의리 있는 분</li>
-          </ul>
-
-          {contact ? (
-            <a className="btn primary" href={contact} target="_blank" rel="noreferrer">
-              DM 문의 바로가기
-            </a>
-          ) : (
-            <button className="btn primary" type="button" onClick={onClose}>
-              확인
+        <div className="recruit-poster-modal-v117__actions">
+          <span>총싸움 · 성실함 · 의리</span>
+          <div>
+            {contact && (
+              <a className="btn primary" href={contact} target="_blank" rel="noreferrer">
+                DM 문의
+              </a>
+            )}
+            <button className="btn ghost" type="button" onClick={onClose}>
+              닫기
             </button>
-          )}
+          </div>
         </div>
       </div>
     </Modal>
@@ -1298,7 +1297,6 @@ function BuildDetail({
               </div>
 
               <div className="ops-info-preset-board">
-                <GhostSlots />
                 {SLOT_META.map((meta) => (
                   <PresetSlot slotKey={meta.key} key={meta.key} />
                 ))}

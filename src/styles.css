@@ -3203,3 +3203,200 @@ select:focus,input:focus,textarea:focus{border-color:rgba(247,183,51,.65);box-sh
 @media(max-width:1580px){.floating-context-v116{right:14px;width:214px;}}
 @media(max-width:1360px){.floating-context-v116{display:none;}}
 @media(max-width:860px){.recruit-poster-modal__body{grid-template-columns:1fr;}}
+
+
+/* =========================================================
+   AXE BUILD v1.1.7
+   - recruitment poster fits in one viewport
+   - supplied real inventory board is the ONLY slot background
+   ========================================================= */
+
+/* Recruitment popup: poster first, no oversized two-column layout */
+.modal.recruit-poster-modal-v117{
+  width:min(760px,calc(100vw - 32px))!important;
+  max-height:94vh!important;
+  overflow:hidden!important;
+}
+.recruit-poster-modal-v117__body{
+  min-height:0;
+  display:grid;
+  justify-items:center;
+  gap:10px;
+  padding:10px 12px 12px;
+}
+.recruit-poster-modal-v117__image{
+  display:block;
+  width:auto;
+  max-width:100%;
+  max-height:calc(94vh - 150px);
+  object-fit:contain;
+  border:1px solid rgba(255,181,46,.12);
+  border-radius:12px;
+  background:#080a0c;
+  box-shadow:0 16px 42px rgba(0,0,0,.24);
+}
+.recruit-poster-modal-v117__actions{
+  width:min(620px,100%);
+  min-height:42px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:8px 10px;
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:10px;
+  background:#0d1013;
+}
+.recruit-poster-modal-v117__actions>span{
+  color:#8f949b;
+  font-size:10px;
+  font-weight:850;
+  letter-spacing:.02em;
+}
+.recruit-poster-modal-v117__actions>div{
+  display:flex;
+  gap:7px;
+}
+
+/* The supplied image already contains every empty inventory slot.
+   Therefore disable the old generated ghost-slot layer completely. */
+.ops-info-preset-ghost{
+  display:none!important;
+}
+.ops-info-preset-board::before,
+.ops-info-preset-board::after{
+  display:none!important;
+}
+
+/* Preserve the exact aspect ratio of the supplied 318x342 inventory board.
+   500x538 is effectively the same ratio and sits centered inside the 520px panel. */
+.ops-info-preset-board{
+  position:relative!important;
+  width:520px!important;
+  max-width:100%!important;
+  height:560px!important;
+  margin:0 auto!important;
+  overflow:visible!important;
+  background:
+    url('/assets/axe-inventory-bg.png') center 10px / 500px 538px no-repeat,
+    #090b0e!important;
+}
+
+/* Actual equipment now occupies the corresponding four real in-game slots.
+   The frame replaces the silhouette below instead of creating another slot beside it. */
+.ops-info-preset-slot-wrap--outer{
+  left:19px!important;
+  top:92px!important;
+  width:143px!important;
+}
+.ops-info-preset-slot-wrap--top{
+  left:167px!important;
+  top:147px!important;
+  width:148px!important;
+}
+.ops-info-preset-slot-wrap--bottom{
+  left:167px!important;
+  top:347px!important;
+  width:148px!important;
+}
+.ops-info-preset-slot-wrap--shoes{
+  left:19px!important;
+  top:396px!important;
+  width:143px!important;
+}
+
+.ops-info-preset-slot-wrap--outer .ops-info-preset-slot,
+.ops-info-preset-slot-wrap--outer .ops-info-preset-slot__frame{
+  width:143px!important;
+}
+.ops-info-preset-slot-wrap--outer .ops-info-preset-slot__frame{
+  height:192px!important;
+}
+
+.ops-info-preset-slot-wrap--top .ops-info-preset-slot,
+.ops-info-preset-slot-wrap--top .ops-info-preset-slot__frame{
+  width:148px!important;
+}
+.ops-info-preset-slot-wrap--top .ops-info-preset-slot__frame{
+  height:194px!important;
+}
+
+.ops-info-preset-slot-wrap--bottom .ops-info-preset-slot,
+.ops-info-preset-slot-wrap--bottom .ops-info-preset-slot__frame{
+  width:148px!important;
+}
+.ops-info-preset-slot-wrap--bottom .ops-info-preset-slot__frame{
+  height:190px!important;
+}
+
+.ops-info-preset-slot-wrap--shoes .ops-info-preset-slot,
+.ops-info-preset-slot-wrap--shoes .ops-info-preset-slot__frame{
+  width:143px!important;
+}
+.ops-info-preset-slot-wrap--shoes .ops-info-preset-slot__frame{
+  height:143px!important;
+}
+
+.ops-info-preset-slot__frame{
+  border-color:rgba(115,126,136,.22)!important;
+  background:rgba(18,23,28,.92)!important;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.02),
+    0 7px 18px rgba(0,0,0,.20)!important;
+}
+.ops-info-preset-slot__frame::before{
+  inset:5px!important;
+  border-color:rgba(255,255,255,.025)!important;
+}
+.ops-info-preset-slot img{
+  max-width:calc(100% - 10px)!important;
+  max-height:calc(100% - 10px)!important;
+}
+.ops-info-preset-slot:hover .ops-info-preset-slot__frame,
+.ops-info-preset-slot:focus-visible .ops-info-preset-slot__frame,
+.ops-info-preset-slot.is-selected .ops-info-preset-slot__frame{
+  border-color:rgba(255,181,46,.62)!important;
+  background:rgba(21,25,30,.96)!important;
+}
+
+/* Tooltip stays outside the active slot and never creates hover blocking. */
+.ops-info-preset-tooltip--outer,
+.ops-info-preset-tooltip--shoes{
+  left:calc(100% + 9px)!important;
+}
+.ops-info-preset-tooltip--top,
+.ops-info-preset-tooltip--bottom{
+  left:auto!important;
+  right:calc(100% + 9px)!important;
+}
+
+/* Keep labels compact so the larger real slot sizes remain visually clean. */
+.ops-info-preset-slot__label{
+  margin-top:-1px!important;
+  font-size:9px!important;
+}
+
+/* Small screens still use the click-based mobile detail.
+   On these widths the decorative real-board alignment is simplified. */
+@media(max-width:680px){
+  .modal.recruit-poster-modal-v117{
+    width:min(96vw,640px)!important;
+  }
+  .recruit-poster-modal-v117__image{
+    max-height:calc(92vh - 160px);
+  }
+  .recruit-poster-modal-v117__actions{
+    align-items:stretch;
+    flex-direction:column;
+  }
+  .recruit-poster-modal-v117__actions>div{
+    justify-content:flex-end;
+  }
+
+  .ops-info-preset-board{
+    width:100%!important;
+    height:430px!important;
+    background-size:auto 410px!important;
+    background-position:center 8px!important;
+  }
+}
