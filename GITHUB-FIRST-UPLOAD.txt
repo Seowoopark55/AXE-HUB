@@ -1,0 +1,29 @@
+AXE HUB · AXE BUILD
+GitHub 1차 업로드용 기준본
+=============================
+
+이 ZIP의 '폴더 안 내용 전체'를 GitHub 저장소 루트에 업로드하세요.
+
+업로드 대상:
+- src/
+- public/
+- index.html
+- package.json
+- vite.config.js
+- vercel.json
+- README.md
+- .env.example
+- .gitignore
+- 기타 안내 파일
+
+업로드 금지:
+- .env.local
+- 실제 Supabase Secret/Service Role Key
+- node_modules/
+- dist/
+
+주의:
+.env.example은 예제값만 포함되어 있으며 실제 AXE HUB 키는 들어있지 않습니다.
+
+앞으로 수정 시:
+이 GitHub 기준본을 기준으로 버전업하면서 전체 파일을 제공하면 됩니다.

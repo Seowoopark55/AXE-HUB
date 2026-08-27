@@ -1,0 +1,60 @@
+AXE HUB · AXE BUILD v1.0.0 적용방법
+===================================
+
+현재까지 완료:
+- AXE HUB Supabase 프로젝트 생성
+- AXE BUILD 전체 SQL 설치
+- Discord OAuth Application 생성
+- Supabase Discord Provider 설정
+- localhost:5173 URL Configuration 설정
+
+지금 할 일:
+
+1) 이 ZIP을 원하는 새 폴더에 압축 해제
+
+2) .env.example 파일을 복사해서 이름을
+   .env.local
+   로 변경
+
+3) .env.local에 방금 찾은 AXE HUB 값을 입력
+
+VITE_SUPABASE_URL=https://프로젝트REF.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_실제키
+VITE_AXE_CONTACT_URL=
+VITE_SITE_URL=http://localhost:5173
+
+※ Secret key / service_role 키는 절대 넣지 않음.
+
+4) 해당 폴더 PowerShell에서:
+
+npm.cmd install
+npm.cmd run check
+npm.cmd run dev
+
+5) 브라우저:
+http://localhost:5173
+
+6) 확인:
+- AXE 공식 샘플 세팅 표시
+- 개조서 도감 데이터 표시
+- Discord 로그인
+- 로그인 후 추천세팅 작성/즐겨찾기/제보
+
+7) Discord 로그인 1회 성공 후 관리자 지정:
+Supabase > SQL Editor
+
+select id, email, raw_user_meta_data
+from auth.users
+order by created_at desc;
+
+본인 UUID 확인 후:
+
+update public.profiles
+set is_admin = true
+where id = '본인-UUID';
+
+8) 관리자 메뉴 표시 확인
+
+다음 단계:
+GitHub 새 저장소 생성 → Vercel 새 프로젝트 배포
+AXE NET 프로젝트에는 덮어쓰지 않음.
