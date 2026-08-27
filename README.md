@@ -1,4 +1,4 @@
-# AXE BUILD v1.1.1 · AXE HUB
+# AXE BUILD v1.1.2 · AXE HUB
 
 외부 공개용 추천세팅 / 개조서 / 제보 서비스입니다.
 
@@ -55,3 +55,12 @@ DB 스키마 변경 없이 기존 AXE HUB Supabase를 그대로 사용합니다.
 `2x2 장비 + 고정 옵션 툴팁 + 전체 옵션 요약` 방식으로 변경했습니다.
 
 기존 V1.1.0 Supabase 마이그레이션 이후 추가 SQL은 없습니다.
+
+
+## V1.1.2
+
+업로드된 실제 AXE NET 프로젝트의 `src/modules/info/infoView.js`와
+`src/modules/info/info.css`의 추천세팅 구현을 기준으로 외부용 상세 UI를 재구성했습니다.
+
+특히 AXE NET v1.46.4에서 해결된 `tooltip pointer-events:none` hover 안정화
+방식까지 그대로 반영했습니다.

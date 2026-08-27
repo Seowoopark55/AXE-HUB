@@ -145,27 +145,155 @@ function summarizeBuildOptions(slots, modMap) {
   return { rows: [...totals.values()], warnings: [...new Set(warnings)] };
 }
 
+function canonicalPresetOptionLabel(value) {
+  const display = String(value || "").replace(/\s+/g, " ").trim();
+  const key = display.replace(/\s+/g, "").toLowerCase();
+  const aliases = {
+    "이동속도증가": "이동 속도 증가",
+    "최대스태미나증가": "최대 스태미나 증가",
+    "최대체력증가": "최대 체력 증가",
+    "전력질주스태미나감소": "전력질주 스태미나 감소",
+  };
+  return aliases[key] || display;
+}
+
+function parsePresetOptionExact(value) {
+  const raw = String(value || "").trim();
+  const negative = raw.startsWith("*");
+  const clean = raw.replace(/^\*\s*/, "").trim();
+  const match = clean.match(/^(.*?)\s*\(([^)]+)\)\s*$/);
+
+  if (!match) {
+    return {
+      raw,
+      negative,
+      label: canonicalPresetOptionLabel(clean),
+      range: "",
+      value: null,
+      unit: "",
+      bestDisplay: "",
+    };
+  }
+
+  const label = canonicalPresetOptionLabel(match[1]);
+  const range = match[2].replace(/\s*~\s*/g, " ~ ").trim();
+  const tokens = [...range.matchAll(/-?\d+(?:\.\d+)?\s*%?/g)]
+    .map((entry) => entry[0].replace(/\s+/g, ""));
+  const bestToken = tokens.length ? tokens[tokens.length - 1] : "";
+  const unit = bestToken.endsWith("%") ? "%" : "";
+  const numeric = Number(bestToken.replace("%", ""));
+
+  return {
+    raw,
+    negative,
+    label,
+    range,
+    value: Number.isFinite(numeric) ? numeric : null,
+    unit,
+    bestDisplay: bestToken,
+  };
+}
+
+function cleanPresetModbookName(name) {
+  return String(name || "")
+    .replace(/\s*\(\s*1\s*\)\s*$/, "")
+    .replace(/\s*1티어\s*$/, "")
+    .trim();
+}
+
+function sumPresetMovement(mods) {
+  return (mods || []).reduce((total, item) => {
+    const options = [item?.option1, item?.option2, item?.option3]
+      .filter(Boolean)
+      .map(parsePresetOptionExact);
+    const movement = options.find(
+      (option) =>
+        !option.negative &&
+        option.label === "이동 속도 증가" &&
+        option.value != null
+    );
+    return total + (movement?.value || 0);
+  }, 0);
+}
+
+function formatPresetCompactNumber(value) {
+  const number = Number(value || 0);
+  if (!Number.isFinite(number)) return "0";
+  return Number.isInteger(number)
+    ? String(number)
+    : number.toFixed(1).replace(/\.0$/, "");
+}
+
+function summarizePresetExact(slots, modMap) {
+  const totals = new Map();
+  const negative = [];
+  let movement = 0;
+
+  for (const slot of slots || []) {
+    for (const id of [slot?.prefix_modbook_id, slot?.suffix_modbook_id]) {
+      const mod = modMap.get(id);
+      if (!mod) continue;
+
+      [mod.option1, mod.option2, mod.option3]
+        .filter(Boolean)
+        .forEach((value) => {
+          const option = parsePresetOptionExact(value);
+          if (option.value == null) return;
+
+          if (option.negative) {
+            negative.push(option);
+            return;
+          }
+
+          const key = `${option.label}|${option.unit}`;
+          const current = totals.get(key) || {
+            label: option.label,
+            unit: option.unit,
+            value: 0,
+          };
+          current.value += option.value;
+          totals.set(key, current);
+
+          if (option.label === "이동 속도 증가") movement += option.value;
+        });
+    }
+  }
+
+  return {
+    movement,
+    positive: [...totals.values()].sort((a, b) => {
+      if (a.label === "이동 속도 증가") return -1;
+      if (b.label === "이동 속도 증가") return 1;
+      return b.value - a.value;
+    }),
+    negative,
+  };
+}
+
+
 function Toast({ message, tone = "default" }) {
   if (!message) return null;
   return <div className={cls("toast", tone === "error" && "error")}>{message}</div>;
 }
 
-function Modal({ title, children, onClose, wide = false }) {
+function Modal({ title, children, onClose, wide = false, bare = false, className = "" }) {
   return (
     <div className="modal-backdrop" onMouseDown={onClose}>
       <section
-        className={cls("modal", wide && "wide")}
+        className={cls("modal", wide && "wide", bare && "bare", className)}
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <header className="modal-head">
-          <div>
-            <div className="eyebrow">AXE HUB</div>
-            <h2>{title}</h2>
-          </div>
-          <button className="icon-btn" onClick={onClose} aria-label="닫기">
-            ×
-          </button>
-        </header>
+        {!bare && (
+          <header className="modal-head">
+            <div>
+              <div className="eyebrow">AXE HUB</div>
+              <h2>{title}</h2>
+            </div>
+            <button className="icon-btn" onClick={onClose} aria-label="닫기">
+              ×
+            </button>
+          </header>
+        )}
         {children}
       </section>
     </div>
@@ -195,11 +323,11 @@ function Header({ tab, setTab, user, profile, onLogin, onLogout, onCreate, onPro
           <Brand />
         </button>
         <nav className="nav">
+          <button className={cls(tab === "notices" && "active")} onClick={() => setTab("notices")}>공지</button>
           <button className={cls(tab === "builds" && "active")} onClick={() => setTab("builds")}>추천세팅</button>
           {user && <button className={cls(tab === "presets" && "active")} onClick={() => setTab("presets")}>내 프리셋</button>}
           <button className={cls(tab === "modbooks" && "active")} onClick={() => setTab("modbooks")}>개조서</button>
           <button className={cls(tab === "reports" && "active")} onClick={() => setTab("reports")}>제보</button>
-          <button className={cls(tab === "notices" && "active")} onClick={() => setTab("notices")}>공지</button>
           {profile?.is_admin && <button className={cls(tab === "admin" && "active")} onClick={() => setTab("admin")}>관리</button>}
         </nav>
         <div className="header-actions">
@@ -423,43 +551,44 @@ function NoticesPage({ announcements }) {
 }
 
 function FloatingRemote({ announcements, onHome, onNotice, onReport, onPreset }) {
-  return (
-    <aside className="floating-remote-v111" aria-label="AXE HUB 빠른 메뉴">
-      <button onClick={onHome}>
-        <span className="remote-icon">⌂</span>
-        <b>홈</b>
-      </button>
-      <button onClick={onNotice}>
-        <span className="remote-icon">!</span>
-        <b>공지</b>
-        {announcements.length > 0 && <span className="remote-dot">{Math.min(announcements.length, 9)}</span>}
-      </button>
-      <button onClick={onReport}>
-        <span className="remote-icon">✎</span>
-        <b>제보</b>
-      </button>
-      <button onClick={onPreset}>
-        <span className="remote-icon">★</span>
-        <b>내 프리셋</b>
-      </button>
-    </aside>
-  );
-}
-
-function RecruitmentMini() {
   const contact = String(import.meta.env.VITE_AXE_CONTACT_URL || "").trim();
-  const inner = (
-    <>
+
+  const recruitHeader = (
+    <div className="remote-recruit-head">
       <span>AXE RECRUIT</span>
       <strong>AXE 인원모집 중</strong>
       <small>DM 문의 주세요.</small>
-    </>
+    </div>
   );
 
-  return contact ? (
-    <a className="recruitment-mini" href={contact} target="_blank" rel="noreferrer">{inner}</a>
-  ) : (
-    <div className="recruitment-mini">{inner}</div>
+  return (
+    <aside className="floating-remote-v112" aria-label="AXE HUB 빠른 메뉴">
+      {contact ? (
+        <a className="remote-recruit-link" href={contact} target="_blank" rel="noreferrer">
+          {recruitHeader}
+        </a>
+      ) : recruitHeader}
+
+      <div className="remote-menu-v112">
+        <button onClick={onHome}>
+          <span className="remote-icon">⌂</span>
+          <b>홈</b>
+        </button>
+        <button onClick={onNotice}>
+          <span className="remote-icon">!</span>
+          <b>공지</b>
+          {announcements.length > 0 && <span className="remote-dot">{Math.min(announcements.length, 9)}</span>}
+        </button>
+        <button onClick={onReport}>
+          <span className="remote-icon">✎</span>
+          <b>제보</b>
+        </button>
+        <button onClick={onPreset}>
+          <span className="remote-icon">★</span>
+          <b>내 프리셋</b>
+        </button>
+      </div>
+    </aside>
   );
 }
 
@@ -637,40 +766,23 @@ function BuildDetail({
   onEdit,
   onDelete
 }) {
-  const summary = summarizeBuildOptions(slots, modMap);
-  const tags = visibleTags(build.tags);
   const [commentText, setCommentText] = useState("");
   const [commentBusy, setCommentBusy] = useState(false);
+  const [selectedSlotKey, setSelectedSlotKey] = useState("bottom");
 
-  const firstConfiguredKey =
-    SLOT_META.find((meta) => {
-      const slot = slots.find((s) => s.slot_key === meta.key);
-      return slot?.prefix_modbook_id || slot?.suffix_modbook_id;
-    })?.key || "outer";
-
-  const [activeSlotKey, setActiveSlotKey] = useState(firstConfiguredKey);
-
-  useEffect(() => {
-    const nextKey =
-      SLOT_META.find((meta) => {
-        const slot = slots.find((s) => s.slot_key === meta.key);
-        return slot?.prefix_modbook_id || slot?.suffix_modbook_id;
-      })?.key || "outer";
-    setActiveSlotKey(nextKey);
-  }, [build.id]);
+  const tags = visibleTags(build.tags);
+  const summary = summarizePresetExact(slots, modMap);
 
   const canManage = Boolean(
     user && (profile?.is_admin || (build.author_id && build.author_id === user.id))
   );
 
-  const activeMeta = SLOT_META.find((meta) => meta.key === activeSlotKey) || SLOT_META[0];
-  const activeSlot = slots.find((s) => s.slot_key === activeMeta.key) || {};
-  const activePrefix = modMap.get(activeSlot?.prefix_modbook_id);
-  const activeSuffix = modMap.get(activeSlot?.suffix_modbook_id);
+  const getSlot = (slotKey) =>
+    slots.find((slot) => String(slot.slot_key) === String(slotKey)) || {};
 
-  const slotSummary = summarizeBuildOptions([activeSlot], modMap);
-  const percentBadge = slotSummary.rows.find((row) => row.unit === "%" && row.value > 0);
-  const slotBadge = percentBadge ? formatSigned(percentBadge.value, percentBadge.unit) : "";
+  const getMods = (slot) =>
+    [modMap.get(slot?.prefix_modbook_id), modMap.get(slot?.suffix_modbook_id)]
+      .filter(Boolean);
 
   const submitComment = async () => {
     if (!commentText.trim()) return;
@@ -680,223 +792,340 @@ function BuildDetail({
     setCommentBusy(false);
   };
 
-  const TooltipMod = ({ type, mod }) => (
-    <section className={cls("internal-tooltip-mod", type === "접두" ? "prefix" : "suffix", !mod && "empty")}>
-      <div className="internal-tooltip-mod-head">
-        <div>
-          <span>{type}</span>
-          <em>{mod?.type || type}</em>
-        </div>
-        <strong>{mod?.name || "선택 없음"}</strong>
-      </div>
-      {mod ? (
-        <div className="internal-tooltip-options">
-          {optionLines(mod).map((line, idx) => (
-            <div key={`${mod.id}-${idx}`} className={line.trim().startsWith("*") ? "warning" : ""}>
-              <b>{line.replace(/^\*/, "⚠ ")}</b>
+  const GhostSlots = () => {
+    const ghosts = [
+      ["ghost-a", "좌측 슬롯"],
+      ["ghost-b", "안경 슬롯"],
+      ["ghost-c", "모자 슬롯"],
+      ["ghost-d", "마스크 슬롯"],
+      ["ghost-e", "목 슬롯"],
+      ["ghost-f", "기타 슬롯"],
+      ["ghost-g", "기타 슬롯"],
+    ];
+    return ghosts.map(([key, label]) => (
+      <span
+        className={`ops-info-preset-ghost ops-info-preset-ghost--${key}`}
+        aria-hidden="true"
+        title={label}
+        key={key}
+      />
+    ));
+  };
+
+  const PresetMod = ({ mod }) => {
+    if (!mod) return null;
+
+    const typeClass = mod.type === "접두" ? "is-prefix" : "is-suffix";
+    const options = [mod.option1, mod.option2, mod.option3]
+      .filter((value) => String(value || "").trim())
+      .map(parsePresetOptionExact);
+
+    return (
+      <section className={`ops-info-preset-mod ${typeClass}`}>
+        <header>
+          <strong>{cleanPresetModbookName(mod.name)}</strong>
+          <span>{mod.type}</span>
+        </header>
+        <div className="ops-info-preset-mod__options">
+          {options.map((option, idx) => (
+            <div className={option.negative ? "is-negative" : ""} key={`${mod.id}-${idx}`}>
+              <b>{option.bestDisplay || "—"}</b>
+              <span>{option.label}</span>
+              {option.range && <small>({option.range})</small>}
             </div>
           ))}
         </div>
-      ) : (
-        <div className="internal-tooltip-empty">선택된 개조서가 없습니다.</div>
-      )}
-    </section>
-  );
+      </section>
+    );
+  };
+
+  const PresetTooltip = ({ slotKey, mobile = false }) => {
+    const meta = SLOT_META.find((item) => item.key === slotKey);
+    const slot = getSlot(slotKey);
+    const mods = getMods(slot);
+    const movement = sumPresetMovement(mods);
+
+    return (
+      <div
+        className={cls(
+          "ops-info-preset-tooltip",
+          `ops-info-preset-tooltip--${slotKey}`,
+          mobile && "is-mobile"
+        )}
+        role={mobile ? "region" : "tooltip"}
+      >
+        <div className="ops-info-preset-tooltip__head">
+          <div>
+            <span>{build.title}</span>
+            <strong>{meta?.label || slotKey}</strong>
+          </div>
+          {movement > 0 && <b>+{formatPresetCompactNumber(movement)}%</b>}
+        </div>
+
+        {mods.map((mod) => <PresetMod mod={mod} key={mod.id} />)}
+
+        {!mods.length && (
+          <div className="ops-info-preset-emptyhint">
+            선택된 개조서가 없습니다.
+          </div>
+        )}
+
+        {slot?.comment && (
+          <div className="ops-info-preset-emptyhint">{slot.comment}</div>
+        )}
+
+        <small>표시 수치 = 해당 옵션의 최대값 · 괄호 = 실제 등장 범위</small>
+      </div>
+    );
+  };
+
+  const PresetSlot = ({ slotKey }) => {
+    const meta = SLOT_META.find((item) => item.key === slotKey);
+    const slot = getSlot(slotKey);
+    const movement = sumPresetMovement(getMods(slot));
+    const selected = selectedSlotKey === slotKey;
+
+    return (
+      <div
+        className={cls(
+          "ops-info-preset-slot-wrap",
+          `ops-info-preset-slot-wrap--${slotKey}`,
+          selected && "is-selected"
+        )}
+      >
+        <button
+          className={cls("ops-info-preset-slot", selected && "is-selected")}
+          type="button"
+          onClick={() => setSelectedSlotKey(slotKey)}
+          aria-label={`${meta?.label || slotKey} 추천 개조서`}
+        >
+          <span className="ops-info-preset-slot__frame">
+            <img src={meta?.image} alt="" loading="lazy" draggable="false" />
+          </span>
+          <span className="ops-info-preset-slot__label">{meta?.label}</span>
+          {movement > 0 && <em>+{formatPresetCompactNumber(movement)}%</em>}
+        </button>
+
+        <PresetTooltip slotKey={slotKey} />
+      </div>
+    );
+  };
 
   return (
-    <Modal title={build.title} onClose={onClose} wide>
-      <div className="legacy-build-head internal-detail-head">
-        <div>
-          <span className="member-build-label">{build.author_id ? "MEMBER BUILD" : "BUILD"}</span>
-          <div className="badges">{tags.map((tag) => <span className="badge" key={tag}>{tag}</span>)}</div>
-          <p>{build.summary || "세팅 설명이 없습니다."}</p>
-        </div>
-
-        <div className="internal-detail-actions">
-          <button
-            className={cls("preset-prominent", favorite && "active")}
-            onClick={() => onFavorite(build)}
-          >
-            {favorite ? "★ 내 프리셋 저장됨" : "☆ 내 프리셋"}
-          </button>
-          <div className="detail-stats">
-            <span>작성 {build.author_name || "익명"}</span>
-            <span>조회 {build.view_count || 0}</span>
-          </div>
-        </div>
-      </div>
-
-      <div className="social-action-row compact-social-row">
-        <button
-          className={cls("vote-btn like", userVote === 1 && "active")}
-          onClick={() => user ? onVote(userVote === 1 ? 0 : 1) : onLogin()}
-        >
-          ▲ 추천 <strong>{build.like_count || 0}</strong>
-        </button>
-        <button
-          className={cls("vote-btn dislike", userVote === -1 && "active")}
-          onClick={() => user ? onVote(userVote === -1 ? 0 : -1) : onLogin()}
-        >
-          ▼ 비추천 <strong>{build.dislike_count || 0}</strong>
-        </button>
-        <span className="comment-count-chip">댓글 {build.comment_count || comments.length || 0}</span>
-      </div>
-
-      {build.description && (
-        <div className="description internal-description">{build.description}</div>
-      )}
-
-      <div className="internal-build-layout">
-        <section className="internal-equipment-panel">
-          <div className="internal-equipment-top">
-            <div className="internal-equipment-tab">
-              <strong>장비</strong>
-              <span>4</span>
-            </div>
-            <em>AXE BUILD</em>
-          </div>
-
-          <div className="internal-equipment-body">
-            <div className="internal-equipment-grid">
-              {SLOT_META.map((meta) => {
-                const slot = slots.find((s) => s.slot_key === meta.key);
-                const selected = activeSlotKey === meta.key;
-                const slotData = summarizeBuildOptions([slot || {}], modMap);
-                const badgeRow = slotData.rows.find((row) => row.unit === "%" && row.value > 0);
-                const badge = badgeRow ? formatSigned(badgeRow.value, badgeRow.unit) : "";
-
-                return (
-                  <button
-                    type="button"
-                    key={meta.key}
-                    className={cls("internal-equipment-card", selected && "active")}
-                    onPointerEnter={() => setActiveSlotKey(meta.key)}
-                    onMouseEnter={() => setActiveSlotKey(meta.key)}
-                    onFocus={() => setActiveSlotKey(meta.key)}
-                    onClick={() => setActiveSlotKey(meta.key)}
-                  >
-                    <div className="internal-equipment-image">
-                      <img src={meta.image} alt={`${meta.label} AXE 팀복`} />
-                      {badge && <span>{badge}</span>}
-                    </div>
-                    <strong>{meta.label}</strong>
-                  </button>
-                );
-              })}
-            </div>
-
-            <aside className="internal-equipment-tooltip" aria-live="polite">
-              <div className="internal-tooltip-head">
-                <div>
-                  <small>{build.title}</small>
-                  <h3>{activeMeta.label}</h3>
-                </div>
-                {slotBadge && <strong>{slotBadge}</strong>}
+    <Modal
+      title={build.title}
+      onClose={onClose}
+      wide
+      bare
+      className="preset-detail-modal-v112"
+    >
+      <section className="ops-info-workspace--preset-detail">
+        <article className="ops-info-preset-article">
+          <header className="ops-info-preset-article__head">
+            <div>
+              <span className="ops-info-kicker">
+                {build.author_id ? "MEMBER BUILD" : "BUILD"}
+              </span>
+              <h2>{build.title}</h2>
+              <div className="ops-info-preset-article__meta">
+                <span>{build.author_name || "AXE"}</span>
+                <span>{fmtDate(build.updated_at || build.created_at)}</span>
+                <span>★ {build.favorite_count || 0}</span>
+                <span>조회 {build.view_count || 0}</span>
               </div>
+            </div>
 
-              <TooltipMod type="접두" mod={activePrefix} />
-              <TooltipMod type="접미" mod={activeSuffix} />
+            <div className="ops-info-preset-article__actions">
+              <button
+                type="button"
+                className={cls("ops-info-btn", favorite && "ops-info-btn--saved")}
+                onClick={() => onFavorite(build)}
+              >
+                {favorite ? "★ 저장됨" : "☆ 내 프리셋"}
+              </button>
 
-              {activeSlot?.comment && (
-                <p className="internal-tooltip-comment">{activeSlot.comment}</p>
+              {user && (
+                <button type="button" className="ops-info-btn" onClick={onClone}>
+                  복제해서 작성
+                </button>
               )}
 
-              <div className="internal-tooltip-foot">
-                장비에 마우스를 올리면 해당 부위 옵션이 즉시 바뀝니다.
-              </div>
-            </aside>
-          </div>
-        </section>
+              {canManage && (
+                <>
+                  <button type="button" className="ops-info-btn" onClick={() => onEdit(build, slots)}>
+                    수정
+                  </button>
+                  <button type="button" className="ops-info-btn ops-info-btn--danger" onClick={() => onDelete(build)}>
+                    삭제
+                  </button>
+                </>
+              )}
 
-        <aside className="summary-panel internal-summary-panel">
-          <div className="summary-head">
-            <div><span>MAX ROLL SUMMARY</span><strong>전체 옵션 요약</strong></div>
-            <em>최대값 합산</em>
-          </div>
+              <button type="button" className="ops-info-btn" onClick={onClose}>
+                닫기
+              </button>
+            </div>
+          </header>
 
-          <div className="summary-rows">
-            {summary.rows.length ? summary.rows.map((row) => (
-              <div className="summary-row" key={`${row.label}-${row.unit}`}>
-                <span>{row.label}</span>
-                <strong>{formatSigned(row.value, row.unit)}</strong>
-              </div>
-            )) : (
-              <div className="summary-empty">계산 가능한 옵션 범위가 없습니다.</div>
-            )}
-          </div>
-
-          {summary.warnings.length > 0 && (
-            <div className="warning-summary internal-warning-summary">
-              <span>주의 옵션</span>
-              {summary.warnings.slice(0, 4).map((warning) => <p key={warning}>{warning}</p>)}
+          {tags.length > 0 && (
+            <div className="ops-info-preset-article__tags">
+              {tags.map((tag) => <span key={tag}>#{tag}</span>)}
             </div>
           )}
 
-          <div className="part-comments">
-            <span>부위별 코멘트</span>
-            {SLOT_META.map((meta) => {
-              const slot = slots.find((s) => s.slot_key === meta.key);
-              if (!slot?.comment) return null;
-              return (
-                <div key={meta.key}>
-                  <strong>{meta.label}</strong>
-                  <p>{slot.comment}</p>
-                </div>
-              );
-            })}
+          <div className="ops-info-preset-article__description">
+            {build.description || build.summary || (
+              <span className="is-empty">설명이 없습니다.</span>
+            )}
           </div>
-        </aside>
-      </div>
 
-      <section className="comments-section">
-        <div className="comments-head">
-          <div><span>BUILD TALK</span><h3>댓글</h3></div>
-          <strong>{comments.length}</strong>
-        </div>
-
-        {user ? (
-          <div className="comment-write">
-            <textarea
-              value={commentText}
-              maxLength={500}
-              onChange={(e) => setCommentText(e.target.value)}
-              placeholder="이 세팅을 써본 느낌이나 보완점을 남겨주세요."
-            />
-            <button className="btn primary" onClick={submitComment} disabled={commentBusy}>
-              {commentBusy ? "등록 중..." : "댓글 등록"}
-            </button>
-          </div>
-        ) : (
-          <button className="comment-login" onClick={onLogin}>댓글을 남기려면 Discord 로그인</button>
-        )}
-
-        <div className="comment-list">
-          {comments.map((comment) => (
-            <article className="comment-row" key={comment.id}>
-              <div className="comment-meta">
-                <strong>{comment.author_name}</strong>
-                <span>{fmtDate(comment.created_at)}</span>
+          <div className="ops-info-preset-article__build-layout">
+            <div className="ops-info-preset-inventory ops-info-preset-inventory--article">
+              <div className="ops-info-preset-inventory__bar">
+                <strong>인벤토리</strong>
+                <span>장비 <b>1</b></span>
+                <em>AXE BUILD</em>
               </div>
-              <p>{comment.body}</p>
-              {user && (profile?.is_admin || comment.user_id === user.id) && (
-                <button className="comment-delete" onClick={() => onDeleteComment(comment)}>삭제</button>
+
+              <div className="ops-info-preset-board">
+                <GhostSlots />
+                {SLOT_META.map((meta) => (
+                  <PresetSlot slotKey={meta.key} key={meta.key} />
+                ))}
+              </div>
+
+              <div className="ops-info-preset-mobile-detail">
+                <PresetTooltip slotKey={selectedSlotKey} mobile />
+              </div>
+            </div>
+
+            <section className="ops-info-preset-aggregate ops-info-preset-aggregate--side">
+              <div className="ops-info-preset-aggregate__head">
+                <div>
+                  <span className="ops-info-kicker">MAX ROLL SUMMARY</span>
+                  <h3>전체 옵션 요약</h3>
+                </div>
+                <small>최대값 합산</small>
+              </div>
+
+              <div className="ops-info-preset-summary__stats">
+                {summary.positive.length ? (
+                  summary.positive.slice(0, 10).map((item) => (
+                    <div
+                      className={item.label === "이동 속도 증가" ? "is-primary" : ""}
+                      key={`${item.label}-${item.unit}`}
+                    >
+                      <span>{item.label}</span>
+                      <strong>
+                        +{item.unit === "%"
+                          ? `${formatPresetCompactNumber(item.value)}%`
+                          : formatPresetCompactNumber(item.value)}
+                      </strong>
+                    </div>
+                  ))
+                ) : (
+                  <div className="ops-info-preset-aggregate__empty">
+                    합산 가능한 옵션이 없습니다.
+                  </div>
+                )}
+              </div>
+
+              {summary.negative.length > 0 && (
+                <div className="ops-info-preset-warning">
+                  <strong>주의 옵션</strong>
+                  {summary.negative.slice(0, 5).map((item, idx) => (
+                    <span key={`${item.label}-${idx}`}>
+                      {item.label} {item.range}
+                    </span>
+                  ))}
+                </div>
               )}
-            </article>
-          ))}
-        </div>
 
-        {!comments.length && <div className="comment-empty">첫 댓글을 남겨보세요.</div>}
+              <div className="ops-info-preset-slot-notes is-compact">
+                <h3>부위별 코멘트</h3>
+                {SLOT_META.map((meta) => {
+                  const note = getSlot(meta.key)?.comment;
+                  if (!note) return null;
+                  return (
+                    <div key={meta.key}>
+                      <strong>{meta.label}</strong>
+                      <p>{note}</p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <p className="ops-info-preset-aggregate__hint">
+                장비 부위에 마우스를 올리면 해당 부위의 접두·접미 옵션을 자세히 볼 수 있습니다.
+              </p>
+            </section>
+          </div>
+
+          <div className="social-action-row preset-social-row-v112">
+            <button
+              className={cls("vote-btn like", userVote === 1 && "active")}
+              onClick={() => user ? onVote(userVote === 1 ? 0 : 1) : onLogin()}
+            >
+              ▲ 추천 <strong>{build.like_count || 0}</strong>
+            </button>
+            <button
+              className={cls("vote-btn dislike", userVote === -1 && "active")}
+              onClick={() => user ? onVote(userVote === -1 ? 0 : -1) : onLogin()}
+            >
+              ▼ 비추천 <strong>{build.dislike_count || 0}</strong>
+            </button>
+            <span className="comment-count-chip">
+              댓글 {build.comment_count || comments.length || 0}
+            </span>
+          </div>
+
+          <section className="comments-section preset-comments-v112">
+            <div className="comments-head">
+              <div><span>BUILD TALK</span><h3>댓글</h3></div>
+              <strong>{comments.length}</strong>
+            </div>
+
+            {user ? (
+              <div className="comment-write">
+                <textarea
+                  value={commentText}
+                  maxLength={500}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder="이 세팅을 써본 느낌이나 보완점을 남겨주세요."
+                />
+                <button className="btn primary" onClick={submitComment} disabled={commentBusy}>
+                  {commentBusy ? "등록 중..." : "댓글 등록"}
+                </button>
+              </div>
+            ) : (
+              <button className="comment-login" onClick={onLogin}>
+                댓글을 남기려면 Discord 로그인
+              </button>
+            )}
+
+            <div className="comment-list">
+              {comments.map((comment) => (
+                <article className="comment-row" key={comment.id}>
+                  <div className="comment-meta">
+                    <strong>{comment.author_name}</strong>
+                    <span>{fmtDate(comment.created_at)}</span>
+                  </div>
+                  <p>{comment.body}</p>
+                  {user && (profile?.is_admin || comment.user_id === user.id) && (
+                    <button className="comment-delete" onClick={() => onDeleteComment(comment)}>
+                      삭제
+                    </button>
+                  )}
+                </article>
+              ))}
+            </div>
+
+            {!comments.length && (
+              <div className="comment-empty">첫 댓글을 남겨보세요.</div>
+            )}
+          </section>
+        </article>
       </section>
-
-      <div className="modal-actions sticky build-detail-actions">
-        {canManage && (
-          <>
-            <button className="btn ghost" onClick={() => onEdit(build, slots)}>수정</button>
-            <button className="btn danger" onClick={() => onDelete(build)}>삭제</button>
-          </>
-        )}
-        {user && <button className="btn ghost" onClick={onClone}>복제해서 작성</button>}
-      </div>
     </Modal>
   );
 }
@@ -1786,7 +2015,6 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`}</pre>
         onReport={() => setTab("reports")}
         onPreset={() => user ? setTab("presets") : login()}
       />
-      <RecruitmentMini />
 
       <Toast message={toast.message} tone={toast.tone} />
 
