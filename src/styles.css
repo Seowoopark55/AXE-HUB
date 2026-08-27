@@ -3887,3 +3887,113 @@ select:focus,input:focus,textarea:focus{border-color:rgba(247,183,51,.65);box-sh
     border-color:rgba(255,181,46,.58)!important;
   }
 }
+
+
+/* =========================================================
+   AXE BUILD v1.1.10
+   SLOT LAYOUT POLISH
+   - center the 2x2 gear block
+   - reduce empty side space
+   - remove background slot board behind the custom board
+   - remove GEAR OPTION label style / watermark clutter
+   ========================================================= */
+
+.hub-gear-board-v119{
+  min-height:438px;
+  grid-template-columns:minmax(0,1.08fr) minmax(235px,.84fr);
+  gap:10px;
+  padding:12px;
+  background:
+    linear-gradient(90deg, rgba(8,10,13,.97) 0%, rgba(8,10,13,.93) 100%),
+    #080a0d !important;
+}
+
+.hub-gear-board-v119::before{
+  inset:10px;
+  border:1px solid rgba(255,255,255,.03);
+}
+
+.hub-gear-board-v119::after{
+  content:none !important;
+}
+
+.hub-gear-grid-v118{
+  align-self:center;
+  justify-self:center;
+  align-content:center;
+  justify-content:center;
+  grid-template-columns:repeat(2, minmax(132px, 164px));
+  gap:12px;
+  width:100%;
+  max-width:352px;
+  margin:0 auto;
+  padding:2px;
+}
+
+.hub-gear-card-v118{
+  gap:7px;
+}
+
+.hub-gear-card-v118__frame{
+  height:176px;
+}
+
+.hub-gear-hover-zone-v119{
+  align-self:center;
+  min-height:330px;
+  padding:0;
+}
+
+.hub-gear-hover-hint-v119{
+  padding:18px 16px;
+  border:1px dashed rgba(255,255,255,.06);
+  background:rgba(10,13,16,.34);
+}
+
+.hub-gear-hover-hint-v119 > span{
+  display:none !important;
+}
+
+.hub-gear-hover-hint-v119 > strong{
+  margin-top:0;
+  color:#8e949b;
+  font-size:13px;
+  font-weight:850;
+}
+
+.hub-gear-hover-hint-v119 > p{
+  margin:8px 0 0;
+  color:#686f76;
+  font-size:9px;
+  line-height:1.65;
+}
+
+.hub-gear-hover-zone-v119 .ops-info-preset-tooltip.is-inspector{
+  min-height:330px !important;
+}
+
+@media (max-width:980px){
+  .hub-gear-board-v119{
+    grid-template-columns:minmax(0,1fr) minmax(225px,.82fr);
+  }
+  .hub-gear-grid-v118{
+    max-width:340px;
+  }
+}
+
+@media (max-width:680px){
+  .hub-gear-board-v119{
+    min-height:0;
+    grid-template-columns:1fr;
+    padding:10px;
+  }
+  .hub-gear-grid-v118{
+    grid-template-columns:1fr 1fr;
+    max-width:none;
+    gap:8px;
+    padding:2px;
+  }
+  .hub-gear-card-v118__frame{
+    height:148px;
+  }
+}

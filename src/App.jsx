@@ -1302,7 +1302,6 @@ function BuildDetail({
                     <PresetTooltip slotKey={hoverSlotKey} inspector />
                   ) : (
                     <div className="hub-gear-hover-hint-v119">
-                      <span>GEAR OPTION</span>
                       <strong>장비에 마우스를 올려보세요.</strong>
                       <p>접두 · 접미 옵션과 최대 수치를 여기서 확인할 수 있습니다.</p>
                     </div>
