@@ -1070,6 +1070,7 @@ function BuildDetail({
   const [commentText, setCommentText] = useState("");
   const [commentBusy, setCommentBusy] = useState(false);
   const [selectedSlotKey, setSelectedSlotKey] = useState("outer");
+  const [hoverSlotKey, setHoverSlotKey] = useState(null);
 
   const tags = visibleTags(build.tags);
   const summary = summarizePresetExact(slots, modMap);
@@ -1185,18 +1186,19 @@ function BuildDetail({
     const meta = SLOT_META.find((item) => item.key === slotKey);
     const slot = getSlot(slotKey);
     const movement = sumPresetMovement(getMods(slot));
-    const selected = selectedSlotKey === slotKey;
+    const hovered = hoverSlotKey === slotKey;
 
     return (
       <button
         className={cls(
           "hub-gear-card-v118",
           `hub-gear-card-v118--${slotKey}`,
-          selected && "is-selected"
+          hovered && "is-hovered"
         )}
         type="button"
-        onMouseEnter={() => setSelectedSlotKey(slotKey)}
-        onFocus={() => setSelectedSlotKey(slotKey)}
+        onMouseEnter={() => setHoverSlotKey(slotKey)}
+        onFocus={() => setHoverSlotKey(slotKey)}
+        onBlur={() => setHoverSlotKey(null)}
         onClick={() => setSelectedSlotKey(slotKey)}
         aria-label={`${meta?.label || slotKey} 추천 개조서`}
       >
@@ -1285,15 +1287,26 @@ function BuildDetail({
                 <em>AXE BUILD</em>
               </div>
 
-              <div className="hub-gear-board-v118">
+              <div
+                className="hub-gear-board-v119"
+                onMouseLeave={() => setHoverSlotKey(null)}
+              >
                 <div className="hub-gear-grid-v118">
                   {SLOT_META.map((meta) => (
                     <PresetSlot slotKey={meta.key} key={meta.key} />
                   ))}
                 </div>
 
-                <div className="hub-gear-inspector-v118">
-                  <PresetTooltip slotKey={selectedSlotKey} inspector />
+                <div className={cls("hub-gear-hover-zone-v119", hoverSlotKey && "is-open")}>
+                  {hoverSlotKey ? (
+                    <PresetTooltip slotKey={hoverSlotKey} inspector />
+                  ) : (
+                    <div className="hub-gear-hover-hint-v119">
+                      <span>GEAR OPTION</span>
+                      <strong>장비에 마우스를 올려보세요.</strong>
+                      <p>접두 · 접미 옵션과 최대 수치를 여기서 확인할 수 있습니다.</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
