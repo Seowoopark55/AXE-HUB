@@ -10,6 +10,34 @@ const SLOT_META = [
 
 const BASE_CATEGORIES = ["전체", "인기", "무법지대", "체력", "이동속도", "생활"];
 const LIFE_CATEGORIES = ["벌목", "낚시", "채광", "택배", "요리"];
+const WEAPON_FAMILIES = [
+  { key: "라이플", code: "RF", aliases: ["라이플", "소총", "rifle"] },
+  { key: "SMG", code: "SMG", aliases: ["smg", "기관단총", "서브머신", "submachine"] },
+  { key: "권총", code: "HG", aliases: ["권총", "피스톨", "pistol", "handgun"] },
+  { key: "샷건", code: "SG", aliases: ["샷건", "산탄총", "shotgun"] },
+  { key: "저격", code: "SR", aliases: ["저격", "스나이퍼", "sniper"] },
+  { key: "기관총", code: "MG", aliases: ["기관총", "lmg", "machinegun", "machine gun"] }
+];
+
+function normalizeWeaponLookup(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFKC")
+    .replace(/\s+/g, "");
+}
+
+function weaponFamilyForMod(mod) {
+  const corpus = normalizeWeaponLookup([
+    mod?.category,
+    mod?.name,
+    mod?.parts
+  ].filter(Boolean).join(" "));
+
+  return WEAPON_FAMILIES.find((family) =>
+    family.aliases.some((alias) => corpus.includes(normalizeWeaponLookup(alias)))
+  ) || null;
+}
+
 const HIDDEN_TAGS = new Set(["AXE 추천", "AXE OFFICIAL", "공식", "밸런스"]);
 
 const BUILD_TAG_GROUPS = [
@@ -61,6 +89,7 @@ const TAB_ROUTES = {
   notices: "/notices",
   presets: "/presets",
   modbooks: "/modbooks",
+  weapons: "/weapons",
   reports: "/reports",
   admin: "/admin"
 };
@@ -71,6 +100,7 @@ const PAGE_TITLES = {
   notices: "공지 · AXE BUILD",
   presets: "내 프리셋 · AXE BUILD",
   modbooks: "개조서 · AXE BUILD",
+  weapons: "무기 · AXE BUILD",
   reports: "제보 · AXE BUILD",
   admin: "관리 · AXE BUILD"
 };
@@ -616,6 +646,7 @@ function Header({
           <button className={cls(tab === "builds" && "active")} onClick={() => setTab("builds")}>추천세팅</button>
           {user && <button className={cls(tab === "presets" && "active")} onClick={() => setTab("presets")}>내 프리셋</button>}
           <button className={cls(tab === "modbooks" && "active")} onClick={() => setTab("modbooks")}>개조서</button>
+          <button className={cls(tab === "weapons" && "active")} onClick={() => setTab("weapons")}>무기</button>
           <button className={cls(tab === "reports" && "active")} onClick={() => setTab("reports")}>제보</button>
           {profile?.is_admin && (
             <button className={cls("admin-nav-btn", tab === "admin" && "active")} onClick={() => setTab("admin")}>
@@ -1049,7 +1080,7 @@ function FloatingContextPanel({
     home: {
       kicker: "AXE HUB",
       title: "빌드 공유 시스템",
-      body: "공지, 추천세팅, 개조서 정보와 제보 기능을 한 곳에서 이용할 수 있습니다."
+      body: "공지, 추천세팅, 개조서·무기 정보와 제보 기능을 한 곳에서 이용할 수 있습니다."
     },
     builds: {
       kicker: "BUILD STATUS",
@@ -1075,6 +1106,11 @@ function FloatingContextPanel({
       kicker: "MODBOOK DATA",
       title: "개조서 확인",
       body: "부위별 개조서 옵션을 검색하고, 필요한 정보는 제보로 추가할 수 있습니다."
+    },
+    weapons: {
+      kicker: "WEAPON DATA",
+      title: "무기 개조 정보",
+      body: "라이플, SMG 등 무기군별로 적용 가능한 개조서를 빠르게 확인할 수 있습니다."
     },
     admin: {
       kicker: "ADMIN CENTER",
@@ -1370,6 +1406,196 @@ function ModbookDetail({ mod }) {
       </div>
       {mod.note && <div className="note-box"><span>NOTE</span><p>{mod.note}</p></div>}
     </aside>
+  );
+}
+
+function WeaponsPage({ modbooks }) {
+  const [family, setFamily] = useState("전체");
+  const [query, setQuery] = useState("");
+  const [selectedMod, setSelectedMod] = useState(null);
+
+  const weaponMods = useMemo(() => {
+    return modbooks
+      .map((mod) => ({ mod, family: weaponFamilyForMod(mod) }))
+      .filter((row) => row.family);
+  }, [modbooks]);
+
+  const familyStats = useMemo(() => {
+    return WEAPON_FAMILIES
+      .map((meta) => {
+        const rows = weaponMods.filter((row) => row.family.key === meta.key);
+        return {
+          ...meta,
+          count: rows.length,
+          prefix: rows.filter((row) => row.mod.type === "접두").length,
+          suffix: rows.filter((row) => row.mod.type === "접미").length
+        };
+      })
+      .filter((row) => row.count > 0);
+  }, [weaponMods]);
+
+  const filtered = useMemo(() => {
+    const needle = normalizeModifierSearch(query);
+
+    return weaponMods.filter((row) => {
+      if (family !== "전체" && row.family.key !== family) return false;
+      if (!needle) return true;
+      return modifierSearchText(row.mod).includes(needle);
+    });
+  }, [weaponMods, family, query]);
+
+  useEffect(() => {
+    if (selectedMod && !filtered.some((row) => row.mod.id === selectedMod.id)) {
+      setSelectedMod(null);
+    }
+  }, [family, query, filtered, selectedMod]);
+
+  return (
+    <section className="shell section weapons-page-v128">
+      <div className="section-head weapons-head-v128">
+        <div>
+          <div className="eyebrow gold">WEAPON DATA</div>
+          <h2>무기</h2>
+          <p>
+            현재 등록된 개조서 정보를 기준으로 무기군별 적용 가능한 개조서를 자동으로 정리합니다.
+            무기별 상세 정보는 확인되는 데이터에 맞춰 계속 확장할 수 있습니다.
+          </p>
+        </div>
+        <div className="weapon-total-v128">
+          <span>연결된 개조서</span>
+          <strong>{weaponMods.length}</strong>
+        </div>
+      </div>
+
+      {familyStats.length > 0 ? (
+        <>
+          <div className="weapon-family-grid-v128">
+            {familyStats.map((row) => (
+              <button
+                type="button"
+                key={row.key}
+                className={cls("weapon-family-card-v128", family === row.key && "active")}
+                onClick={() => {
+                  setFamily((prev) => prev === row.key ? "전체" : row.key);
+                  setSelectedMod(null);
+                }}
+              >
+                <span className="weapon-family-code-v128">{row.code}</span>
+                <div>
+                  <strong>{row.key}</strong>
+                  <small>접두 {row.prefix} · 접미 {row.suffix}</small>
+                </div>
+                <em>{row.count}</em>
+              </button>
+            ))}
+          </div>
+
+          <div className="weapon-toolbar-v128">
+            <div className="weapon-filter-tabs-v128">
+              <button
+                type="button"
+                className={cls(family === "전체" && "active")}
+                onClick={() => {
+                  setFamily("전체");
+                  setSelectedMod(null);
+                }}
+              >
+                전체
+              </button>
+              {familyStats.map((row) => (
+                <button
+                  type="button"
+                  key={row.key}
+                  className={cls(family === row.key && "active")}
+                  onClick={() => {
+                    setFamily(row.key);
+                    setSelectedMod(null);
+                  }}
+                >
+                  {row.key}
+                </button>
+              ))}
+            </div>
+
+            <div className="weapon-search-v128">
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="개조서명 / 옵션 검색"
+                autoComplete="off"
+              />
+              {query && (
+                <button type="button" onClick={() => setQuery("")} aria-label="검색어 지우기">×</button>
+              )}
+            </div>
+          </div>
+
+          <div className="weapon-data-layout-v128">
+            <div className="weapon-mod-list-v128">
+              <div className="weapon-list-head-v128">
+                <div>
+                  <span>{family === "전체" ? "전체 무기군" : family}</span>
+                  <strong>적용 가능한 개조서</strong>
+                </div>
+                <em>{filtered.length}개</em>
+              </div>
+
+              {filtered.map(({ mod, family: rowFamily }) => (
+                <button
+                  type="button"
+                  key={mod.id}
+                  className={cls("weapon-mod-row-v128", selectedMod?.id === mod.id && "active")}
+                  onClick={() => setSelectedMod(mod)}
+                >
+                  <span className="weapon-mod-family-v128">{rowFamily.code}</span>
+                  <div className="weapon-mod-copy-v128">
+                    <div>
+                      <span className={cls("type-pill", mod.type === "접두" ? "prefix" : "suffix")}>{mod.type}</span>
+                      <b>{mod.name}</b>
+                    </div>
+                    <small>{mod.category} · {mod.parts || "적용 부위 미확인"}</small>
+                    <p>{optionLines(mod).slice(0, 2).join(" · ") || "옵션 정보 없음"}</p>
+                  </div>
+                  <span className="weapon-mod-rate-v128">{mod.success_rate || "-"}</span>
+                </button>
+              ))}
+
+              {!filtered.length && (
+                <div className="empty weapon-empty-v128">
+                  조건에 맞는 무기 개조서가 없습니다.
+                </div>
+              )}
+            </div>
+
+            <div className="weapon-detail-wrap-v128">
+              {selectedMod ? (
+                <ModbookDetail mod={selectedMod} />
+              ) : (
+                <div className="weapon-detail-empty-v128">
+                  <span>WEAPON MODBOOK</span>
+                  <strong>개조서를 선택하세요.</strong>
+                  <p>목록에서 개조서를 선택하면 적용 부위와 옵션을 자세히 확인할 수 있습니다.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="weapon-source-note-v128">
+            <span>DATA SOURCE</span>
+            <p>
+              이 페이지의 무기군 연결은 AXE BUILD 개조서 DB의 분류·이름을 기준으로 자동 구성됩니다.
+              개조서 정보가 추가되면 무기 페이지에도 자동 반영됩니다.
+            </p>
+          </div>
+        </>
+      ) : (
+        <div className="weapon-no-data-v128">
+          <span>WEAPON DATA</span>
+          <strong>연결할 수 있는 무기 개조서가 아직 없습니다.</strong>
+          <p>라이플, SMG 등 무기 관련 개조서가 등록되면 이 페이지에 자동으로 나타납니다.</p>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -3259,6 +3485,7 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`}</pre>
       )}
       {tab === "presets" && <PresetsPage user={user} builds={builds} buildSlotsMap={buildSlotsMap} modMap={modMap} favorites={favorites} onOpen={openBuild} onFavorite={toggleFavorite} onLogin={login} />}
       {tab === "modbooks" && <ModbooksPage modbooks={modbooks} />}
+      {tab === "weapons" && <WeaponsPage modbooks={modbooks} />}
       {tab === "reports" && <ReportsPage user={user} myReports={myReports} onNewReport={() => setReportEditor(true)} onLogin={login} />}
       {tab === "notices" && (
         <NoticesPage
