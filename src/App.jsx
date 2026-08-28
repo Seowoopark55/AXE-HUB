@@ -627,7 +627,7 @@ function Hero({ onJump, user, onProfile, onLogin }) {
         <div className="eyebrow gold">AXE BUILD · PUBLIC SETTING HUB</div>
         <h1>추천세팅을<br />가장 빠르게 찾는 곳.</h1>
         <p>
-          장비 슬롯을 한눈에 확인하고 마우스를 올려 개조서 옵션을 바로 비교하세요.
+          장비 슬롯과 개조서 옵션을 한눈에 비교하고, 이용자들이 직접 공유한 다양한 세팅을 확인해보세요.
           추천세팅과 개조서는 로그인 없이 볼 수 있고, 로그인하면 프리셋 저장·추천·댓글을 사용할 수 있습니다.
         </p>
         <div className="hero-actions hero-actions-v119">
