@@ -111,6 +111,31 @@ function cls(...parts) {
   return parts.filter(Boolean).join(" ");
 }
 
+function SettingsIcon({ size = 15 }) {
+  return (
+    <svg
+      className="settings-icon-v119"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M12 8.25A3.75 3.75 0 1 0 12 15.75A3.75 3.75 0 0 0 12 8.25Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+      />
+      <path
+        d="M19.2 13.15c.05-.38.08-.76.08-1.15s-.03-.77-.08-1.15l2.05-1.6-2-3.46-2.55 1.03a8.2 8.2 0 0 0-2-1.16L14.3 3h-4.6l-.4 2.66a8.2 8.2 0 0 0-2 1.16L4.75 5.79l-2 3.46 2.05 1.6c-.05.38-.08.76-.08 1.15s.03.77.08 1.15l-2.05 1.6 2 3.46 2.55-1.03a8.2 8.2 0 0 0 2 1.16L9.7 21h4.6l.4-2.66a8.2 8.2 0 0 0 2-1.16l2.55 1.03 2-3.46-2.05-1.6Z"
+        stroke="currentColor"
+        strokeWidth="1.35"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 function fmtDate(value) {
   if (!value) return "";
   try {
@@ -595,7 +620,7 @@ function Header({
   );
 }
 
-function Hero({ onJump }) {
+function Hero({ onJump, user, onProfile, onLogin }) {
   return (
     <section className="hero shell hero-simple">
       <div className="hero-copy">
@@ -605,8 +630,20 @@ function Hero({ onJump }) {
           장비 슬롯을 한눈에 확인하고 마우스를 올려 개조서 옵션을 바로 비교하세요.
           추천세팅과 개조서는 로그인 없이 볼 수 있고, 로그인하면 프리셋 저장·추천·댓글을 사용할 수 있습니다.
         </p>
-        <div className="hero-actions">
+        <div className="hero-actions hero-actions-v119">
           <button className="btn primary" onClick={onJump}>추천세팅 바로 보기</button>
+          {user ? (
+            <button
+              className="btn hero-profile-btn-v119"
+              onClick={onProfile}
+              title="닉네임·회사명 등 프로필 설정"
+            >
+              <SettingsIcon />
+              <span>프로필 설정</span>
+            </button>
+          ) : (
+            <button className="btn hero-login-btn-v119" onClick={onLogin}>Discord 로그인</button>
+          )}
         </div>
       </div>
     </section>
@@ -2956,7 +2993,12 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`}</pre>
       {tab === "home" && (
         <>
           <NoticeStrip announcements={announcements} onOpen={() => navigateTab("notices")} />
-          <Hero onJump={jumpToBuilds} />
+          <Hero
+            onJump={jumpToBuilds}
+            user={user}
+            onProfile={() => setProfileModal(true)}
+            onLogin={login}
+          />
         </>
       )}
       {tab === "builds" && (

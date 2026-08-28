@@ -4979,3 +4979,52 @@ select:focus,input:focus,textarea:focus{border-color:rgba(247,183,51,.65);box-sh
     text-align:left;
   }
 }
+
+
+/* =========================================================
+   AXE BUILD v1.1.19
+   HOME PROFILE ENTRY
+   ========================================================= */
+.hero-actions-v119{
+  align-items:center;
+}
+.hero-profile-btn-v119,
+.hero-login-btn-v119{
+  background:rgba(18,18,20,.76);
+  border-color:#303036;
+  color:#b9b9c0;
+  box-shadow:inset 0 1px rgba(255,255,255,.025);
+}
+.hero-profile-btn-v119:hover{
+  color:#f0f0f2;
+  border-color:#4a4a50;
+  background:#171719;
+}
+.hero-login-btn-v119{
+  color:#aeb5ef;
+  border-color:rgba(88,101,242,.28);
+}
+.hero-login-btn-v119:hover{
+  color:#d9dcff;
+  border-color:rgba(88,101,242,.52);
+  background:rgba(88,101,242,.07);
+}
+.settings-icon-v119{
+  flex:none;
+  color:#8f9097;
+}
+.hero-profile-btn-v119:hover .settings-icon-v119{
+  color:#d5d5da;
+}
+
+@media(max-width:620px){
+  .hero-actions-v119{
+    grid-template-columns:minmax(0,1.25fr) minmax(0,.85fr);
+  }
+  .hero-actions-v119 .btn{
+    min-width:0;
+    padding-left:12px;
+    padding-right:12px;
+    white-space:nowrap;
+  }
+}
