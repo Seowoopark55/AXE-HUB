@@ -9,12 +9,12 @@ const SLOT_META = [
 ];
 
 const BASE_CATEGORIES = ["전체", "인기", "무법지대", "체력", "이동속도", "생활"];
-const LIFE_CATEGORIES = ["벌목", "낚시", "채광", "택배"];
+const LIFE_CATEGORIES = ["벌목", "낚시", "채광", "택배", "요리"];
 const HIDDEN_TAGS = new Set(["AXE 추천", "AXE OFFICIAL", "공식", "밸런스"]);
 
 const BUILD_TAG_GROUPS = [
   { label: "전투 / 핵심", options: ["무법지대", "체력", "이동속도"] },
-  { label: "생활", options: ["생활", "벌목", "낚시", "채광", "택배"] }
+  { label: "생활", options: ["생활", "벌목", "낚시", "채광", "택배", "요리"] }
 ];
 const BUILD_TAG_OPTIONS = BUILD_TAG_GROUPS.flatMap((group) => group.options);
 
