@@ -152,6 +152,49 @@ const emptySlots = () =>
     ])
   );
 
+function normalizeEditorSlots(source) {
+  const base = emptySlots();
+
+  if (!source) return base;
+
+  // localStorage draft shape: { outer, top, bottom, shoes, ... }
+  if (!Array.isArray(source) && typeof source === "object") {
+    for (const meta of BUILD_SLOT_META) {
+      const row = source?.[meta.key];
+      if (!row) continue;
+
+      base[meta.key] = {
+        ...base[meta.key],
+        prefix_modbook_id: row.prefix_modbook_id || "",
+        suffix_modbook_id: row.suffix_modbook_id || "",
+        comment: row.comment || "",
+        weapon_family: meta.key === "weapon"
+          ? String(row.weapon_family || "")
+          : undefined
+      };
+    }
+    return base;
+  }
+
+  // Supabase build_slots shape: [{ slot_key, ... }]
+  for (const row of source || []) {
+    const slotKey = String(row?.slot_key || "");
+    if (!base[slotKey]) continue;
+
+    base[slotKey] = {
+      ...base[slotKey],
+      prefix_modbook_id: row?.prefix_modbook_id || "",
+      suffix_modbook_id: row?.suffix_modbook_id || "",
+      comment: row?.comment || "",
+      weapon_family: slotKey === "weapon"
+        ? String(row?.weapon_family || "")
+        : undefined
+    };
+  }
+
+  return base;
+}
+
 function cls(...parts) {
   return parts.filter(Boolean).join(" ");
 }
@@ -2502,17 +2545,8 @@ function BuildEditor({
   });
 
   const [slots, setSlots] = useState(() => {
-    if (initial?.slots) return initial.slots;
-    const base = emptySlots();
-    (initialSlots || []).forEach((s) => {
-      base[s.slot_key] = {
-        prefix_modbook_id: s.prefix_modbook_id || "",
-        suffix_modbook_id: s.suffix_modbook_id || "",
-        comment: s.comment || "",
-        weapon_family: s.weapon_family || ""
-      };
-    });
-    return base;
+    if (initial?.slots) return normalizeEditorSlots(initial.slots);
+    return normalizeEditorSlots(initialSlots || []);
   });
 
   const [saving, setSaving] = useState(false);
@@ -2547,7 +2581,14 @@ function BuildEditor({
   }, [form, slots, isCreate, draftKey]);
 
   const setSlot = (slotKey, k, v) =>
-    setSlots((prev) => ({ ...prev, [slotKey]: { ...prev[slotKey], [k]: v } }));
+    setSlots((prev) => ({
+      ...prev,
+      [slotKey]: {
+        ...(emptySlots()[slotKey] || {}),
+        ...(prev?.[slotKey] || {}),
+        [k]: v
+      }
+    }));
 
   async function save() {
     if (!form.title.trim()) return setError("세팅 제목을 입력하세요.");
@@ -2557,6 +2598,7 @@ function BuildEditor({
 
     try {
       const tags = normalizeBuildTagSelection(form.tags);
+      const safeSlots = normalizeEditorSlots(slots);
 
       const payload = {
         title: form.title.trim(),
@@ -2582,15 +2624,15 @@ function BuildEditor({
         for (const meta of BUILD_SLOT_META) {
           const original = (initialSlots || []).find((s) => s.slot_key === meta.key);
           const slotPayload = {
-            prefix_modbook_id: slots[meta.key].prefix_modbook_id
-              ? Number(slots[meta.key].prefix_modbook_id)
+            prefix_modbook_id: safeSlots[meta.key].prefix_modbook_id
+              ? Number(safeSlots[meta.key].prefix_modbook_id)
               : null,
-            suffix_modbook_id: slots[meta.key].suffix_modbook_id
-              ? Number(slots[meta.key].suffix_modbook_id)
+            suffix_modbook_id: safeSlots[meta.key].suffix_modbook_id
+              ? Number(safeSlots[meta.key].suffix_modbook_id)
               : null,
-            comment: slots[meta.key].comment.trim(),
+            comment: safeSlots[meta.key].comment.trim(),
             weapon_family: meta.key === "weapon"
-              ? (String(slots[meta.key].weapon_family || "").trim() || null)
+              ? (String(safeSlots[meta.key].weapon_family || "").trim() || null)
               : null
           };
 
@@ -2630,15 +2672,15 @@ function BuildEditor({
         const slotRows = BUILD_SLOT_META.map((meta) => ({
           build_id: build.id,
           slot_key: meta.key,
-          prefix_modbook_id: slots[meta.key].prefix_modbook_id
-            ? Number(slots[meta.key].prefix_modbook_id)
+          prefix_modbook_id: safeSlots[meta.key].prefix_modbook_id
+            ? Number(safeSlots[meta.key].prefix_modbook_id)
             : null,
-          suffix_modbook_id: slots[meta.key].suffix_modbook_id
-            ? Number(slots[meta.key].suffix_modbook_id)
+          suffix_modbook_id: safeSlots[meta.key].suffix_modbook_id
+            ? Number(safeSlots[meta.key].suffix_modbook_id)
             : null,
-          comment: slots[meta.key].comment.trim(),
+          comment: safeSlots[meta.key].comment.trim(),
           weapon_family: meta.key === "weapon"
-            ? (String(slots[meta.key].weapon_family || "").trim() || null)
+            ? (String(safeSlots[meta.key].weapon_family || "").trim() || null)
             : null
         }));
 
@@ -2742,7 +2784,7 @@ function BuildEditor({
         <label className="weapon-family-select-v129">
           <span>무기군</span>
           <select
-            value={slots.weapon.weapon_family || ""}
+            value={slots.weapon?.weapon_family || ""}
             onChange={(e) => {
               const nextFamily = e.target.value;
               setSlots((prev) => ({
@@ -2764,32 +2806,32 @@ function BuildEditor({
           <small>무기 슬롯은 선택 사항입니다. 기존 장비 4부위 세팅만 올려도 됩니다.</small>
         </label>
 
-        {slots.weapon.weapon_family && (
+        {slots.weapon?.weapon_family && (
           <div className="weapon-slot-editor-v129__pickers">
             <ModifierPicker
               type="접두"
               slotMeta={WEAPON_SLOT_META}
               modbooks={modbooks}
-              weaponFamily={slots.weapon.weapon_family}
-              value={slots.weapon.prefix_modbook_id}
+              weaponFamily={slots.weapon?.weapon_family || ""}
+              value={slots.weapon?.prefix_modbook_id || ""}
               onChange={(v) => setSlot("weapon", "prefix_modbook_id", v)}
             />
             <ModifierPicker
               type="접미"
               slotMeta={WEAPON_SLOT_META}
               modbooks={modbooks}
-              weaponFamily={slots.weapon.weapon_family}
-              value={slots.weapon.suffix_modbook_id}
+              weaponFamily={slots.weapon?.weapon_family || ""}
+              value={slots.weapon?.suffix_modbook_id || ""}
               onChange={(v) => setSlot("weapon", "suffix_modbook_id", v)}
             />
           </div>
         )}
 
-        {slots.weapon.weapon_family && (
+        {slots.weapon?.weapon_family && (
           <label className="weapon-slot-comment-v129">
             <span>무기 설명</span>
             <textarea
-              value={slots.weapon.comment}
+              value={slots.weapon?.comment || ""}
               onChange={(e) => setSlot("weapon", "comment", e.target.value)}
               placeholder="이 무기군과 개조서 조합을 선택한 이유"
             />

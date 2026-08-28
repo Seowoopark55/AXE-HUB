@@ -1,0 +1,24 @@
+AXE HUB · AXE BUILD V1.1.30
+=================================
+
+[긴급 호환성 수정]
+증상:
+- V1.1.29 배포 후 검은 화면
+- Console:
+  Cannot read properties of undefined (reading 'weapon_family')
+
+원인:
+- 이전 버전에서 저장된 작성 임시저장(localStorage draft)에 weapon 슬롯이 없음
+- 새 UI가 weapon 슬롯이 항상 있다고 가정
+
+수정:
+- 기존 4슬롯 draft 자동 마이그레이션
+- 기존 Supabase 4슬롯 데이터도 자동 보정
+- weapon 슬롯 optional guard 추가
+- 저장 전 슬롯 구조 재정규화
+
+사용자가 브라우저 캐시/localStorage를 직접 지울 필요 없음.
+
+[SQL]
+V1.1.30 신규 SQL 없음.
+V1.1.29 SQL은 기존대로 필요.
