@@ -5777,3 +5777,287 @@ select:focus,input:focus,textarea:focus{border-color:rgba(247,183,51,.65);box-sh
     display:none;
   }
 }
+
+
+/* =========================================================
+   AXE BUILD v1.1.29
+   WEAPON SLOT IN BUILDS / PRESETS
+   ========================================================= */
+
+/* Build card weapon strip */
+.build-weapon-strip-v129{
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr);
+  gap:10px;
+  align-items:center;
+  margin:0 0 8px;
+  padding:9px 10px;
+  border:1px solid rgba(198,148,66,.18);
+  border-radius:10px;
+  background:
+    linear-gradient(135deg,rgba(198,148,66,.045),transparent 52%),
+    #0d1013;
+}
+.build-weapon-code-v129{
+  display:grid;
+  place-items:center;
+  width:40px;
+  height:40px;
+  border:1px solid rgba(198,148,66,.22);
+  border-radius:9px;
+  background:rgba(198,148,66,.045);
+  color:#d1a85f;
+  font-size:8px;
+  font-weight:1000;
+  letter-spacing:.04em;
+}
+.build-weapon-main-v129{
+  min-width:0;
+}
+.build-weapon-main-v129>div:first-child{
+  display:flex;
+  align-items:baseline;
+  gap:7px;
+}
+.build-weapon-main-v129 small{
+  color:#75613e;
+  font-size:7px;
+  font-weight:1000;
+  letter-spacing:.08em;
+}
+.build-weapon-main-v129 strong{
+  color:#dedfe1;
+  font-size:10px;
+  font-weight:950;
+}
+.build-weapon-mods-v129{
+  display:flex;
+  gap:10px;
+  min-width:0;
+  margin-top:4px;
+}
+.build-weapon-mods-v129>span{
+  min-width:0;
+  overflow:hidden;
+  color:#858c93;
+  font-size:8px;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.build-weapon-mods-v129 em{
+  margin-right:4px;
+  font-size:7px;
+}
+
+/* Detail weapon panel */
+.preset-weapon-v129{
+  margin:10px 10px 0;
+  overflow:hidden;
+  border:1px solid rgba(198,148,66,.19);
+  border-radius:11px;
+  background:
+    linear-gradient(135deg,rgba(198,148,66,.045),transparent 50%),
+    #0c0f12;
+}
+.preset-weapon-v129__head{
+  display:grid;
+  grid-template-columns:42px minmax(0,1fr) auto;
+  gap:9px;
+  align-items:center;
+  padding:10px 11px;
+  border-bottom:1px solid rgba(198,148,66,.10);
+}
+.preset-weapon-v129__code{
+  display:grid;
+  place-items:center;
+  width:40px;
+  height:40px;
+  border:1px solid rgba(198,148,66,.22);
+  border-radius:9px;
+  background:rgba(198,148,66,.04);
+  color:#d0a65d;
+  font-size:8px;
+  font-weight:1000;
+}
+.preset-weapon-v129__head small{
+  display:block;
+  color:#77613c;
+  font-size:7px;
+  font-weight:1000;
+  letter-spacing:.09em;
+}
+.preset-weapon-v129__head strong{
+  display:block;
+  margin-top:2px;
+  color:#e2e3e5;
+  font-size:12px;
+  font-weight:1000;
+}
+.preset-weapon-v129__head em{
+  color:#7f7565;
+  font-size:8px;
+  font-style:normal;
+  font-weight:900;
+}
+.preset-weapon-v129__mods{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px;
+  padding:9px 10px 10px;
+}
+.preset-weapon-v129__mod{
+  min-width:0;
+  padding:8px 9px;
+  border:1px solid #252a2f;
+  border-radius:8px;
+  background:#0b0e11;
+}
+.preset-weapon-v129__mod>span{
+  display:block;
+  font-size:7px;
+  font-weight:1000;
+}
+.preset-weapon-v129__mod.is-prefix>span{
+  color:#78aef0;
+}
+.preset-weapon-v129__mod.is-suffix>span{
+  color:#df7777;
+}
+.preset-weapon-v129__mod>strong{
+  display:block;
+  overflow:hidden;
+  margin-top:3px;
+  color:#d7dadd;
+  font-size:9px;
+  font-weight:950;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.preset-weapon-v129__mod>small{
+  display:block;
+  overflow:hidden;
+  margin-top:5px;
+  color:#747b82;
+  font-size:7.8px;
+  line-height:1.45;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.preset-weapon-v129__note{
+  margin:0;
+  padding:8px 10px 10px;
+  border-top:1px solid rgba(255,255,255,.035);
+  color:#858c93;
+  font-size:8.5px;
+  line-height:1.55;
+  word-break:keep-all;
+}
+
+/* Build editor weapon section */
+.weapon-slot-editor-v129{
+  margin:0 20px 10px;
+  padding:13px;
+  border:1px solid rgba(198,148,66,.20);
+  border-radius:12px;
+  background:
+    linear-gradient(135deg,rgba(198,148,66,.045),transparent 45%),
+    #0c0f12;
+}
+.weapon-slot-editor-v129__head{
+  display:grid;
+  grid-template-columns:48px minmax(0,1fr);
+  gap:11px;
+  align-items:center;
+  margin-bottom:11px;
+}
+.weapon-slot-editor-v129__mark{
+  display:grid;
+  place-items:center;
+  width:46px;
+  height:46px;
+  border:1px solid rgba(198,148,66,.24);
+  border-radius:10px;
+  background:rgba(198,148,66,.045);
+  color:#d2a85f;
+  font-size:8px;
+  font-weight:1000;
+  letter-spacing:.05em;
+}
+.weapon-slot-editor-v129__head small{
+  display:block;
+  color:#80683f;
+  font-size:7px;
+  font-weight:1000;
+  letter-spacing:.1em;
+}
+.weapon-slot-editor-v129__head strong{
+  display:block;
+  margin-top:2px;
+  color:#e0e2e4;
+  font-size:13px;
+  font-weight:1000;
+}
+.weapon-slot-editor-v129__head span{
+  display:block;
+  margin-top:3px;
+  color:#767d84;
+  font-size:8.5px;
+  line-height:1.5;
+  word-break:keep-all;
+}
+.weapon-family-select-v129{
+  display:grid!important;
+  gap:6px!important;
+}
+.weapon-family-select-v129>span,
+.weapon-slot-comment-v129>span{
+  color:#8e959c;
+  font-size:8px;
+  font-weight:900;
+}
+.weapon-family-select-v129>small{
+  color:#60676e;
+  font-size:8px;
+  line-height:1.5;
+  word-break:keep-all;
+}
+.weapon-slot-editor-v129__pickers{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:9px;
+  margin-top:10px;
+}
+.weapon-slot-comment-v129{
+  display:grid!important;
+  gap:6px!important;
+  margin-top:9px;
+}
+.weapon-slot-comment-v129 textarea{
+  min-height:72px;
+}
+
+@media(max-width:760px){
+  .weapon-slot-editor-v129{
+    margin-left:12px;
+    margin-right:12px;
+  }
+  .weapon-slot-editor-v129__pickers{
+    grid-template-columns:1fr;
+  }
+  .preset-weapon-v129__mods{
+    grid-template-columns:1fr;
+  }
+  .build-weapon-mods-v129{
+    flex-direction:column;
+    gap:3px;
+  }
+}
+
+@media(max-width:470px){
+  .preset-weapon-v129__head{
+    grid-template-columns:38px minmax(0,1fr);
+  }
+  .preset-weapon-v129__head em{
+    display:none;
+  }
+}
