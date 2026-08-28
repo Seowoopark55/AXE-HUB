@@ -48,6 +48,95 @@ function weaponFamilyForMod(mod) {
   ) || null;
 }
 
+function WeaponFamilyVisual({ family, compact = false }) {
+  const key = String(family || "").trim();
+  const common = {
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: compact ? 4.6 : 4,
+    strokeLinecap: "round",
+    strokeLinejoin: "round"
+  };
+
+  const body = (() => {
+    switch (key) {
+      case "권총":
+        return (
+          <>
+            <path {...common} d="M38 27 H103 L119 38 H94 L90 47 H65 L61 39 H38 Z" />
+            <path {...common} d="M72 47 L82 68 H65 L57 47" />
+            <path {...common} d="M103 28 H139" />
+          </>
+        );
+      case "SMG":
+        return (
+          <>
+            <path {...common} d="M26 31 H116 L133 40 H96 L90 48 H52 L47 41 H26 Z" />
+            <path {...common} d="M70 48 L77 69 H61 L57 48" />
+            <path {...common} d="M101 48 L107 65" />
+            <path {...common} d="M132 40 H156" />
+          </>
+        );
+      case "샷건":
+        return (
+          <>
+            <path {...common} d="M22 36 H128" />
+            <path {...common} d="M35 29 H126 L142 36 L126 43 H42 Z" />
+            <path {...common} d="M92 43 L99 61 H83 L78 43" />
+            <path {...common} d="M142 36 H166" />
+          </>
+        );
+      case "저격":
+        return (
+          <>
+            <path {...common} d="M17 37 H128" />
+            <path {...common} d="M34 29 H119 L137 37 L119 45 H49 Z" />
+            <path {...common} d="M74 45 L82 64 H65 L59 45" />
+            <path {...common} d="M68 22 H106" />
+            <circle {...common} cx="87" cy="22" r="10" />
+            <path {...common} d="M137 37 H171" />
+          </>
+        );
+      case "기관총":
+        return (
+          <>
+            <path {...common} d="M20 31 H123 L140 39 H103 L96 48 H47 L42 40 H20 Z" />
+            <path {...common} d="M67 48 L72 67 H57 L53 48" />
+            <path {...common} d="M99 48 L115 63" />
+            <path {...common} d="M113 48 L127 64" />
+            <path {...common} d="M139 39 H164" />
+            <rect {...common} x="76" y="48" width="21" height="15" rx="3" />
+          </>
+        );
+      case "라이플":
+      default:
+        return (
+          <>
+            <path {...common} d="M20 33 H124 L141 40 H99 L92 49 H50 L44 41 H20 Z" />
+            <path {...common} d="M67 49 L75 68 H59 L54 49" />
+            <path {...common} d="M95 49 L102 64" />
+            <path {...common} d="M141 40 H166" />
+          </>
+        );
+    }
+  })();
+
+  return (
+    <div className={cls("weapon-family-visual-v132", compact && "is-compact", !key && "is-empty")}>
+      <svg viewBox="0 0 180 82" aria-hidden="true">
+        {key ? body : (
+          <>
+            <rect {...common} x="34" y="22" width="112" height="38" rx="10" />
+            <path {...common} d="M72 41 H108" />
+            <path {...common} d="M90 30 V52" />
+          </>
+        )}
+      </svg>
+      <span>{key || "WEAPON"}</span>
+    </div>
+  );
+}
+
 const HIDDEN_TAGS = new Set(["AXE 추천", "AXE OFFICIAL", "공식", "밸런스"]);
 
 const BUILD_TAG_GROUPS = [
@@ -812,14 +901,17 @@ function BuildCard({ build, slots, modMap, onOpen, favorite, onFavorite }) {
         <span className="open-arrow">→</span>
       </div>
       {(weaponFamily || weaponMods.length > 0) && (
-        <div className="build-weapon-strip-v129">
-          <span className="build-weapon-code-v129">{weaponFamilyMeta?.code || "WPN"}</span>
-          <div className="build-weapon-main-v129">
-            <div>
-              <small>WEAPON</small>
+        <div className="mini-slot weapon-mini-slot-v132">
+          <div className="mini-slot-visual weapon-mini-slot-v132__visual">
+            <WeaponFamilyVisual family={weaponFamily} compact />
+            <span>{weaponFamilyMeta?.code || "WPN"}</span>
+          </div>
+          <div className="mini-slot-body">
+            <div className="mini-slot-label weapon-mini-slot-v132__label">
+              <small>WEAPON SLOT</small>
               <strong>{weaponFamily || "무기"}</strong>
             </div>
-            <div className="build-weapon-mods-v129">
+            <div className="mini-slot-values">
               <span className="prefix-text"><em>접두</em>{modName(weaponSlot?.prefix_modbook_id)}</span>
               <span className="suffix-text"><em>접미</em>{modName(weaponSlot?.suffix_modbook_id)}</span>
             </div>
@@ -1933,7 +2025,7 @@ function BuildDetail({
   };
 
   const PresetTooltip = ({ slotKey, mobile = false, inspector = false }) => {
-    const meta = SLOT_META.find((item) => item.key === slotKey);
+    const meta = BUILD_SLOT_META.find((item) => item.key === slotKey);
     const slot = getSlot(slotKey);
     const mods = getMods(slot);
     const representative = getPresetRepresentativeStat(mods);
@@ -1951,7 +2043,11 @@ function BuildDetail({
         <div className="ops-info-preset-tooltip__head">
           <div>
             <span>{build.title}</span>
-            <strong>{meta?.label || slotKey}</strong>
+            <strong>
+              {slotKey === "weapon"
+                ? `무기${weaponFamily ? ` · ${weaponFamily}` : ""}`
+                : (meta?.label || slotKey)}
+            </strong>
           </div>
           {representative && (
             <b title={`대표 옵션 · ${representative.label} 최대 합산`}>
@@ -1978,7 +2074,7 @@ function BuildDetail({
   };
 
   const PresetSlot = ({ slotKey }) => {
-    const meta = SLOT_META.find((item) => item.key === slotKey);
+    const meta = BUILD_SLOT_META.find((item) => item.key === slotKey);
     const slot = getSlot(slotKey);
     const representative = getPresetRepresentativeStat(getMods(slot));
     const hovered = hoverSlotKey === slotKey;
@@ -1998,14 +2094,23 @@ function BuildDetail({
         aria-label={`${meta?.label || slotKey} 추천 개조서`}
       >
         <span className="hub-gear-card-v118__frame">
-          <img src={meta?.image} alt="" loading="lazy" draggable="false" />
+          {slotKey === "weapon" ? (
+            <>
+              <WeaponFamilyVisual family={weaponFamily} />
+              <span className="weapon-slot-family-badge-v132">{weaponFamilyMeta?.code || "WPN"}</span>
+            </>
+          ) : (
+            <img src={meta?.image} alt="" loading="lazy" draggable="false" />
+          )}
           {representative && (
             <em title={`대표 옵션 · ${representative.label} 최대 합산`}>
               {representative.shortLabel} +{formatPresetCompactNumber(representative.value)}%
             </em>
           )}
         </span>
-        <span className="hub-gear-card-v118__label">{meta?.label}</span>
+        <span className="hub-gear-card-v118__label">
+          {slotKey === "weapon" ? `무기 · ${weaponFamily || "미선택"}` : meta?.label}
+        </span>
       </button>
     );
   };
@@ -2089,45 +2194,14 @@ function BuildDetail({
                 <em>AXE BUILD</em>
               </div>
 
-              {(weaponFamily || weaponMods.length > 0) && (
-                <section className="preset-weapon-v129">
-                  <div className="preset-weapon-v129__head">
-                    <span className="preset-weapon-v129__code">{weaponFamilyMeta?.code || "WPN"}</span>
-                    <div>
-                      <small>WEAPON SLOT</small>
-                      <strong>{weaponFamily || "무기"}</strong>
-                    </div>
-                    <em>무기 개조</em>
-                  </div>
-
-                  <div className="preset-weapon-v129__mods">
-                    <div className="preset-weapon-v129__mod is-prefix">
-                      <span>접두</span>
-                      <strong>{modMap.get(weaponSlot?.prefix_modbook_id)?.name || "선택 안 함"}</strong>
-                      <small>
-                        {optionLines(modMap.get(weaponSlot?.prefix_modbook_id)).slice(0, 2).join(" · ") || "개조서 없음"}
-                      </small>
-                    </div>
-                    <div className="preset-weapon-v129__mod is-suffix">
-                      <span>접미</span>
-                      <strong>{modMap.get(weaponSlot?.suffix_modbook_id)?.name || "선택 안 함"}</strong>
-                      <small>
-                        {optionLines(modMap.get(weaponSlot?.suffix_modbook_id)).slice(0, 2).join(" · ") || "개조서 없음"}
-                      </small>
-                    </div>
-                  </div>
-
-                  {weaponSlot?.comment && (
-                    <p className="preset-weapon-v129__note">{weaponSlot.comment}</p>
-                  )}
-                </section>
-              )}
-
               <div
                 className="hub-gear-board-v119"
                 onMouseLeave={() => setHoverSlotKey(null)}
               >
-                <div className="hub-gear-grid-v118">
+                <div className="hub-gear-grid-v118 hub-gear-grid-v132">
+                  {(weaponFamily || weaponMods.length > 0) && (
+                    <PresetSlot slotKey="weapon" key="weapon" />
+                  )}
                   {SLOT_META.map((meta) => (
                     <PresetSlot slotKey={meta.key} key={meta.key} />
                   ))}
@@ -2138,7 +2212,7 @@ function BuildDetail({
                     <PresetTooltip slotKey={hoverSlotKey} inspector />
                   ) : (
                     <div className="hub-gear-hover-hint-v119">
-                      <strong>장비에 마우스를 올려보세요.</strong>
+                      <strong>무기나 장비에 마우스를 올려보세요.</strong>
                       <p>접두 · 접미 옵션과 최대 수치를 여기서 확인할 수 있습니다.</p>
                     </div>
                   )}
@@ -2771,13 +2845,22 @@ function BuildEditor({
         </label>
       </div>
 
-      <section className="weapon-slot-editor-v129">
-        <div className="weapon-slot-editor-v129__head">
-          <div className="weapon-slot-editor-v129__mark">WPN</div>
-          <div>
-            <small>OPTIONAL WEAPON SLOT</small>
-            <strong>무기</strong>
-            <span>무기군을 고르면 해당 무기에 적용 가능한 개조서만 표시됩니다.</span>
+      <section className="weapon-slot-editor-v129 weapon-slot-editor-v132">
+        <div className="weapon-slot-editor-v132__top">
+          <div className="weapon-editor-preview-v132">
+            <div className="weapon-editor-preview-v132__frame">
+              <WeaponFamilyVisual family={slots.weapon?.weapon_family || ""} />
+              <span>{WEAPON_FAMILIES.find((row) => row.key === slots.weapon?.weapon_family)?.code || "WPN"}</span>
+            </div>
+            <strong>{slots.weapon?.weapon_family || "무기 슬롯"}</strong>
+          </div>
+
+          <div className="weapon-slot-editor-v129__head weapon-slot-editor-v132__head">
+            <div>
+              <small>OPTIONAL WEAPON SLOT</small>
+              <strong>무기</strong>
+              <span>장비 슬롯처럼 무기군과 접두·접미 개조서를 하나의 슬롯으로 구성합니다.</span>
+            </div>
           </div>
         </div>
 

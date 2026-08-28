@@ -6061,3 +6061,219 @@ select:focus,input:focus,textarea:focus{border-color:rgba(247,183,51,.65);box-sh
     display:none;
   }
 }
+
+
+/* =========================================================
+   AXE BUILD v1.1.32
+   WEAPON SLOT VISUAL PASS
+   ========================================================= */
+
+/* Generic family silhouette used anywhere a real weapon image is not yet known. */
+.weapon-family-visual-v132{
+  position:relative;
+  width:100%;
+  height:100%;
+  display:grid;
+  place-items:center;
+  color:#b48b4d;
+}
+.weapon-family-visual-v132 svg{
+  width:88%;
+  height:78%;
+  overflow:visible;
+  filter:drop-shadow(0 10px 14px rgba(0,0,0,.38));
+}
+.weapon-family-visual-v132>span{
+  position:absolute;
+  left:50%;
+  bottom:8px;
+  transform:translateX(-50%);
+  max-width:88%;
+  overflow:hidden;
+  color:rgba(213,179,112,.55);
+  font-size:7px;
+  font-weight:1000;
+  letter-spacing:.16em;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.weapon-family-visual-v132.is-compact>span{
+  bottom:4px;
+  font-size:6px;
+}
+.weapon-family-visual-v132.is-empty{
+  color:#555d64;
+}
+.weapon-family-visual-v132.is-empty>span{
+  color:#555d64;
+}
+
+/* Recommendation list: weapon now reads as the same kind of visual slot as gear. */
+.weapon-mini-slot-v132{
+  margin:0 0 8px;
+  border-color:rgba(198,148,66,.20)!important;
+  background:
+    linear-gradient(135deg,rgba(198,148,66,.035),transparent 48%),
+    #0d1013!important;
+}
+.weapon-mini-slot-v132__visual{
+  background:
+    radial-gradient(circle at 50% 42%,rgba(198,148,66,.08),transparent 62%),
+    #0a0d10!important;
+}
+.weapon-mini-slot-v132__visual .weapon-family-visual-v132{
+  position:absolute;
+  inset:2px;
+  width:auto;
+  height:auto;
+}
+.weapon-mini-slot-v132__visual>span{
+  z-index:4;
+}
+.weapon-mini-slot-v132__label{
+  display:flex;
+  align-items:baseline;
+  gap:6px;
+}
+.weapon-mini-slot-v132__label small{
+  color:#776039;
+  font-size:6.8px;
+  font-weight:1000;
+  letter-spacing:.08em;
+}
+.weapon-mini-slot-v132__label strong{
+  margin:0!important;
+}
+
+/* Detail: weapon is a proper full-width inventory slot above the 2x2 gear. */
+.hub-gear-grid-v132 .hub-gear-card-v118--weapon{
+  grid-column:1 / -1;
+}
+.hub-gear-card-v118--weapon .hub-gear-card-v118__frame{
+  height:118px;
+  background:
+    radial-gradient(circle at 48% 44%,rgba(198,148,66,.08),transparent 54%),
+    linear-gradient(180deg,rgba(16,20,24,.96),rgba(10,13,16,.96));
+}
+.hub-gear-card-v118--weapon .weapon-family-visual-v132{
+  width:min(92%,420px);
+  height:100%;
+  color:#bd9453;
+}
+.hub-gear-card-v118--weapon:hover .weapon-family-visual-v132,
+.hub-gear-card-v118--weapon.is-hovered .weapon-family-visual-v132{
+  color:#d3aa63;
+  transform:scale(1.015);
+}
+.hub-gear-card-v118--weapon .weapon-family-visual-v132{
+  transition:.13s ease;
+}
+.weapon-slot-family-badge-v132{
+  position:absolute;
+  left:7px;
+  top:7px;
+  z-index:3;
+  min-width:29px;
+  height:20px;
+  display:grid;
+  place-items:center;
+  padding:0 6px;
+  border:1px solid rgba(198,148,66,.26);
+  border-radius:5px;
+  background:rgba(7,9,11,.90);
+  color:#c79d56;
+  font-size:7px;
+  font-weight:1000;
+  letter-spacing:.04em;
+}
+.hub-gear-card-v118--weapon .hub-gear-card-v118__label{
+  color:#a99571;
+}
+
+/* Editor: visual weapon slot preview instead of text-only block. */
+.weapon-slot-editor-v132__top{
+  display:grid;
+  grid-template-columns:150px minmax(0,1fr);
+  gap:14px;
+  align-items:center;
+  margin-bottom:12px;
+}
+.weapon-editor-preview-v132{
+  display:grid;
+  gap:6px;
+}
+.weapon-editor-preview-v132__frame{
+  position:relative;
+  height:92px;
+  overflow:hidden;
+  border:1px solid rgba(133,145,156,.24);
+  border-radius:10px;
+  background:
+    radial-gradient(circle at 50% 40%,rgba(198,148,66,.08),transparent 58%),
+    #0c1013;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.018),
+    0 9px 22px rgba(0,0,0,.22);
+}
+.weapon-editor-preview-v132__frame>.weapon-family-visual-v132{
+  position:absolute;
+  inset:3px;
+  width:auto;
+  height:auto;
+}
+.weapon-editor-preview-v132__frame>span{
+  position:absolute;
+  right:7px;
+  top:7px;
+  z-index:3;
+  min-width:28px;
+  height:20px;
+  display:grid;
+  place-items:center;
+  padding:0 5px;
+  border:1px solid rgba(198,148,66,.27);
+  border-radius:5px;
+  background:rgba(7,9,11,.88);
+  color:#c69b52;
+  font-size:7px;
+  font-weight:1000;
+}
+.weapon-editor-preview-v132>strong{
+  color:#92989e;
+  font-size:9px;
+  font-weight:900;
+  text-align:center;
+}
+.weapon-slot-editor-v132__head{
+  margin:0!important;
+  display:block!important;
+}
+.weapon-slot-editor-v132__head>div{
+  min-width:0;
+}
+
+/* Retire v1.1.29 text panel if stale CSS is still present. */
+.preset-weapon-v129{
+  display:none!important;
+}
+
+@media(max-width:760px){
+  .weapon-slot-editor-v132__top{
+    grid-template-columns:120px minmax(0,1fr);
+  }
+  .weapon-editor-preview-v132__frame{
+    height:80px;
+  }
+  .hub-gear-card-v118--weapon .hub-gear-card-v118__frame{
+    height:104px;
+  }
+}
+
+@media(max-width:520px){
+  .weapon-slot-editor-v132__top{
+    grid-template-columns:1fr;
+  }
+  .weapon-editor-preview-v132{
+    width:min(220px,100%);
+  }
+}
