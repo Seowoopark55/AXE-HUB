@@ -1849,19 +1849,316 @@ function ReportsPage({ user, myReports, onNewReport, onLogin }) {
   );
 }
 
+function AdminModbookManager({ modbooks, buildSlotsMap, onSave, onDelete }) {
+  const emptyForm = {
+    id: null,
+    name: "",
+    type: "접두",
+    category: "",
+    parts: "",
+    success_rate: "",
+    option1: "",
+    option2: "",
+    option3: "",
+    note: "",
+    sort_order: ""
+  };
+
+  const [query, setQuery] = useState("");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [selectedId, setSelectedId] = useState(null);
+  const [form, setForm] = useState(emptyForm);
+  const [saving, setSaving] = useState(false);
+
+  const usageMap = useMemo(() => {
+    const map = new Map();
+
+    for (const slots of Object.values(buildSlotsMap || {})) {
+      for (const slot of slots || []) {
+        for (const id of [slot?.prefix_modbook_id, slot?.suffix_modbook_id]) {
+          if (!id) continue;
+          map.set(Number(id), (map.get(Number(id)) || 0) + 1);
+        }
+      }
+    }
+
+    return map;
+  }, [buildSlotsMap]);
+
+  const categories = useMemo(
+    () => [...new Set(modbooks.map((m) => String(m?.category || "").trim()).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b, "ko")),
+    [modbooks]
+  );
+
+  const partsOptions = useMemo(
+    () => [...new Set(modbooks.map((m) => String(m?.parts || "").trim()).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b, "ko")),
+    [modbooks]
+  );
+
+  const rows = useMemo(() => {
+    const needle = normalizeModifierSearch(query);
+
+    return modbooks.filter((mod) => {
+      if (typeFilter !== "all" && mod.type !== typeFilter) return false;
+      if (!needle) return true;
+      return modifierSearchText(mod).includes(needle);
+    });
+  }, [modbooks, query, typeFilter]);
+
+  function editMod(mod) {
+    setSelectedId(mod.id);
+    setForm({
+      id: mod.id,
+      name: mod.name || "",
+      type: mod.type || "접두",
+      category: mod.category || "",
+      parts: mod.parts || "",
+      success_rate: mod.success_rate || "",
+      option1: mod.option1 || "",
+      option2: mod.option2 || "",
+      option3: mod.option3 || "",
+      note: mod.note || "",
+      sort_order: mod.sort_order ?? ""
+    });
+  }
+
+  function newMod() {
+    setSelectedId(null);
+    setForm(emptyForm);
+  }
+
+  function setField(key, value) {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  async function submit() {
+    if (!form.name.trim()) return;
+    if (!form.category.trim()) return;
+
+    setSaving(true);
+    try {
+      const ok = await onSave(form);
+      if (ok) newMod();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const selectedUsage = form.id ? (usageMap.get(Number(form.id)) || 0) : 0;
+
+  return (
+    <div className="admin-modbook-manager-v133">
+      <div className="admin-modbook-toolbar-v133">
+        <div>
+          <span>MODBOOK DATABASE</span>
+          <strong>개조서 직접 관리</strong>
+          <p>제보 승인 후 잘못 반영된 항목도 여기서 수정하거나 삭제할 수 있습니다.</p>
+        </div>
+        <button className="btn primary" type="button" onClick={newMod}>+ 새 개조서</button>
+      </div>
+
+      <div className="admin-modbook-layout-v133">
+        <aside className="admin-modbook-list-v133">
+          <div className="admin-modbook-search-v133">
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="개조서명 / 옵션 검색"
+            />
+            <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+              <option value="all">접두/접미 전체</option>
+              <option value="접두">접두</option>
+              <option value="접미">접미</option>
+            </select>
+          </div>
+
+          <div className="admin-modbook-list-head-v133">
+            <span>전체 {modbooks.length}개</span>
+            <em>검색 {rows.length}개</em>
+          </div>
+
+          <div className="admin-modbook-scroll-v133">
+            {rows.map((mod) => {
+              const used = usageMap.get(Number(mod.id)) || 0;
+
+              return (
+                <button
+                  key={mod.id}
+                  type="button"
+                  className={cls("admin-modbook-row-v133", selectedId === mod.id && "active")}
+                  onClick={() => editMod(mod)}
+                >
+                  <div>
+                    <span className={cls("type-pill", mod.type === "접두" ? "prefix" : "suffix")}>{mod.type}</span>
+                    <strong>{mod.name}</strong>
+                  </div>
+                  <small>{mod.category} · {mod.parts || "부위 미입력"}</small>
+                  <div className="admin-modbook-row-meta-v133">
+                    <span>{mod.success_rate || "성공률 -"}</span>
+                    {used > 0 ? <em>세팅 사용 {used}</em> : <em className="is-free">미사용</em>}
+                  </div>
+                </button>
+              );
+            })}
+
+            {!rows.length && <div className="empty compact-empty">검색 결과가 없습니다.</div>}
+          </div>
+        </aside>
+
+        <section className="admin-modbook-editor-v133">
+          <div className="admin-modbook-editor-head-v133">
+            <div>
+              <span>{form.id ? "EDIT MODBOOK" : "NEW MODBOOK"}</span>
+              <strong>{form.id ? "개조서 수정" : "개조서 추가"}</strong>
+            </div>
+            {form.id && (
+              <div className={cls("admin-modbook-usage-v133", selectedUsage > 0 && "is-used")}>
+                <span>추천세팅 사용</span>
+                <strong>{selectedUsage}</strong>
+              </div>
+            )}
+          </div>
+
+          <div className="admin-modbook-form-v133">
+            <label className="full">
+              <span>개조서 이름</span>
+              <input value={form.name} onChange={(e) => setField("name", e.target.value)} placeholder="예: 제한된" />
+            </label>
+
+            <label>
+              <span>종류</span>
+              <select value={form.type} onChange={(e) => setField("type", e.target.value)}>
+                <option value="접두">접두</option>
+                <option value="접미">접미</option>
+              </select>
+            </label>
+
+            <label>
+              <span>분류</span>
+              <input
+                value={form.category}
+                onChange={(e) => setField("category", e.target.value)}
+                placeholder="체력, 이동속도, 라이플..."
+                list="admin-modbook-category-v133"
+              />
+              <datalist id="admin-modbook-category-v133">
+                {categories.map((value) => <option key={value} value={value} />)}
+              </datalist>
+            </label>
+
+            <label>
+              <span>적용 부위</span>
+              <input
+                value={form.parts}
+                onChange={(e) => setField("parts", e.target.value)}
+                placeholder="겉옷/단독상의, 라이플..."
+                list="admin-modbook-parts-v133"
+              />
+              <datalist id="admin-modbook-parts-v133">
+                {partsOptions.map((value) => <option key={value} value={value} />)}
+              </datalist>
+            </label>
+
+            <label>
+              <span>성공률</span>
+              <input
+                value={form.success_rate}
+                onChange={(e) => setField("success_rate", e.target.value)}
+                placeholder="예: 30%"
+              />
+            </label>
+
+            <label className="full">
+              <span>옵션 1</span>
+              <input value={form.option1} onChange={(e) => setField("option1", e.target.value)} />
+            </label>
+
+            <label className="full">
+              <span>옵션 2</span>
+              <input value={form.option2} onChange={(e) => setField("option2", e.target.value)} />
+            </label>
+
+            <label className="full">
+              <span>옵션 3</span>
+              <input value={form.option3} onChange={(e) => setField("option3", e.target.value)} />
+            </label>
+
+            <label className="full">
+              <span>비고</span>
+              <textarea value={form.note} onChange={(e) => setField("note", e.target.value)} />
+            </label>
+
+            <label>
+              <span>정렬 순서</span>
+              <input
+                type="number"
+                value={form.sort_order}
+                onChange={(e) => setField("sort_order", e.target.value)}
+                placeholder="자동"
+              />
+            </label>
+          </div>
+
+          <div className="admin-modbook-editor-actions-v133">
+            {form.id && (
+              <button
+                className="btn danger admin-modbook-delete-v133"
+                type="button"
+                onClick={() => onDelete(form, selectedUsage)}
+                disabled={saving}
+                title={selectedUsage > 0 ? "추천세팅에서 사용 중이면 DB가 삭제를 차단합니다." : "개조서 삭제"}
+              >
+                삭제
+              </button>
+            )}
+
+            <div>
+              <button className="btn ghost" type="button" onClick={newMod}>초기화</button>
+              <button
+                className="btn primary"
+                type="button"
+                onClick={submit}
+                disabled={saving || !form.name.trim() || !form.category.trim()}
+              >
+                {saving ? "저장 중..." : (form.id ? "수정 저장" : "개조서 추가")}
+              </button>
+            </div>
+          </div>
+
+          {form.id && selectedUsage > 0 && (
+            <div className="admin-modbook-delete-guide-v133">
+              <span>삭제 보호</span>
+              <p>
+                이 개조서는 현재 추천세팅 {selectedUsage}개 슬롯에서 사용 중입니다.
+                실수로 기존 세팅을 깨뜨리지 않도록 DB에서 삭제를 차단합니다. 수정은 바로 가능합니다.
+              </p>
+            </div>
+          )}
+        </section>
+      </div>
+    </div>
+  );
+}
+
 function AdminPage({
   profile,
   reports,
   nicknameRequests,
   companyRequests,
   announcements,
+  modbooks,
+  buildSlotsMap,
   initialMode = "nicknames",
   onApprove,
   onReject,
   onNicknameReview,
   onCompanyReview,
   onAnnouncementSave,
-  onAnnouncementDelete
+  onAnnouncementDelete,
+  onModbookSave,
+  onModbookDelete
 }) {
   const [mode, setMode] = useState(initialMode);
 
@@ -1880,13 +2177,22 @@ function AdminPage({
   };
   return (
     <section className="shell section admin-page">
-      <div className="section-head"><div><div className="eyebrow">AXE HUB ADMIN</div><h2>관리 센터</h2><p>제보 검수, 닉네임·회사명 승인, 공지사항을 한 곳에서 관리합니다.</p></div></div>
+      <div className="section-head"><div><div className="eyebrow">AXE HUB ADMIN</div><h2>관리 센터</h2><p>개조서 DB, 제보 검수, 닉네임·회사명 승인, 공지사항을 한 곳에서 관리합니다.</p></div></div>
       <div className="admin-tabs">
+        <button className={cls(mode === "modbooks" && "active")} onClick={() => setMode("modbooks")}>개조서 관리 <span>{modbooks.length}</span></button>
         <button className={cls(mode === "reports" && "active")} onClick={() => setMode("reports")}>개조서 제보 <span>{pending.length}</span></button>
         <button className={cls(mode === "nicknames" && "active")} onClick={() => setMode("nicknames")}>닉네임 신청 <span>{pendingNames.length}</span></button>
         <button className={cls(mode === "companies" && "active")} onClick={() => setMode("companies")}>회사명 신청 <span>{pendingCompanies.length}</span></button>
         <button className={cls(mode === "notices" && "active")} onClick={() => setMode("notices")}>공지사항 <span>{announcements.length}</span></button>
       </div>
+      {mode === "modbooks" && (
+        <AdminModbookManager
+          modbooks={modbooks}
+          buildSlotsMap={buildSlotsMap}
+          onSave={onModbookSave}
+          onDelete={onModbookDelete}
+        />
+      )}
       {mode === "reports" && <div className="admin-list">{pending.map((r) => <article className="admin-card" key={r.id}><div className="admin-card-head"><div><span className="status pending">pending</span><h3>{r.name}</h3></div><span>{r.mod_type} · {r.category || "기타"}</span></div><dl><div><dt>부위</dt><dd>{r.parts || "-"}</dd></div><div><dt>옵션</dt><dd className="preline">{r.options_text || "-"}</dd></div><div><dt>메모</dt><dd>{r.note || "-"}</dd></div></dl><div className="admin-actions"><button className="btn ghost" onClick={() => onReject(r)}>반려</button><button className="btn primary" onClick={() => onApprove(r)}>승인</button></div></article>)}</div>}
       {mode === "reports" && !pending.length && <div className="empty">대기 중인 개조서 제보가 없습니다.</div>}
       {mode === "nicknames" && <div className="admin-list">{pendingNames.map((r) => <article className="admin-card nickname-admin-card" key={r.id}><div className="admin-card-head"><div><span className="status pending">pending</span><h3>{r.current_name || "Discord 사용자"} <span className="nickname-arrow">→</span> {r.requested_name}</h3></div><span>{fmtDate(r.created_at)}</span></div><p className="nickname-review-explain">승인하면 이후 추천세팅·댓글·제보에서 이 닉네임이 표시됩니다.</p><div className="admin-actions"><button className="btn ghost" onClick={() => onNicknameReview(r, false)}>반려</button><button className="btn primary" onClick={() => onNicknameReview(r, true)}>승인</button></div></article>)}</div>}
@@ -3701,6 +4007,61 @@ export default function App() {
     notify("제보를 등록했습니다.");
   }
 
+  async function saveAdminModbook(form) {
+    const params = {
+      p_name: form.name.trim(),
+      p_type: form.type,
+      p_category: form.category.trim(),
+      p_parts: form.parts.trim() || null,
+      p_success_rate: form.success_rate.trim() || null,
+      p_option1: form.option1.trim() || null,
+      p_option2: form.option2.trim() || null,
+      p_option3: form.option3.trim() || null,
+      p_note: form.note.trim() || null,
+      p_sort_order: form.sort_order === "" ? null : Number(form.sort_order)
+    };
+
+    const isEdit = Boolean(form.id);
+    const rpcName = isEdit ? "admin_update_modbook" : "admin_create_modbook";
+
+    if (isEdit) params.p_modbook_id = Number(form.id);
+
+    const { error } = await supabase.rpc(rpcName, params);
+    if (error) {
+      notify(`개조서 ${isEdit ? "수정" : "추가"} 실패: ${error.message}`, "error");
+      return false;
+    }
+
+    notify(isEdit ? "개조서를 수정했습니다." : "개조서를 추가했습니다.");
+    await loadModbooks();
+    return true;
+  }
+
+  async function deleteAdminModbook(mod, usageCount = 0) {
+    if (!mod?.id) return false;
+
+    const usageText = usageCount > 0
+      ? `\n\n현재 추천세팅 ${usageCount}개 슬롯에서 사용 중이라 DB가 삭제를 차단할 수 있습니다.`
+      : "";
+
+    if (!window.confirm(`"${mod.name}" 개조서를 삭제할까요?${usageText}\n\n삭제 후에는 되돌릴 수 없습니다.`)) {
+      return false;
+    }
+
+    const { error } = await supabase.rpc("admin_delete_modbook", {
+      p_modbook_id: Number(mod.id)
+    });
+
+    if (error) {
+      notify(`개조서 삭제 실패: ${error.message}`, "error");
+      return false;
+    }
+
+    notify("개조서를 삭제했습니다.");
+    await loadModbooks();
+    return true;
+  }
+
   async function approve(report) {
     const { error } = await supabase.rpc("approve_modbook_report", { p_report_id: report.id });
     if (error) return notify(error.message, "error");
@@ -3815,6 +4176,8 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`}</pre>
           nicknameRequests={adminNicknameRequests}
           companyRequests={adminCompanyRequests}
           announcements={announcements}
+          modbooks={modbooks}
+          buildSlotsMap={buildSlotsMap}
           initialMode={adminMode}
           onApprove={approve}
           onReject={reject}
@@ -3822,6 +4185,8 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`}</pre>
           onCompanyReview={reviewCompany}
           onAnnouncementSave={saveAnnouncement}
           onAnnouncementDelete={deleteAnnouncement}
+          onModbookSave={saveAdminModbook}
+          onModbookDelete={deleteAdminModbook}
         />
       )}
 

@@ -6277,3 +6277,307 @@ select:focus,input:focus,textarea:focus{border-color:rgba(247,183,51,.65);box-sh
     width:min(220px,100%);
   }
 }
+
+
+/* =========================================================
+   AXE BUILD v1.1.33
+   ADMIN MODBOOK CRUD
+   ========================================================= */
+
+.admin-modbook-manager-v133{
+  display:grid;
+  gap:10px;
+}
+
+.admin-modbook-toolbar-v133{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  padding:12px 13px;
+  border:1px solid #252a2f;
+  border-radius:11px;
+  background:#0c0f12;
+}
+.admin-modbook-toolbar-v133>div>span,
+.admin-modbook-editor-head-v133>div>span{
+  display:block;
+  color:#8a6c3c;
+  font-size:7.5px;
+  font-weight:1000;
+  letter-spacing:.1em;
+}
+.admin-modbook-toolbar-v133>div>strong,
+.admin-modbook-editor-head-v133>div>strong{
+  display:block;
+  margin-top:2px;
+  color:#dedfe1;
+  font-size:12px;
+  font-weight:1000;
+}
+.admin-modbook-toolbar-v133>div>p{
+  margin:4px 0 0;
+  color:#747b82;
+  font-size:8.5px;
+  line-height:1.5;
+  word-break:keep-all;
+}
+
+.admin-modbook-layout-v133{
+  display:grid;
+  grid-template-columns:minmax(280px,.8fr) minmax(400px,1.2fr);
+  gap:10px;
+  align-items:start;
+}
+
+.admin-modbook-list-v133,
+.admin-modbook-editor-v133{
+  overflow:hidden;
+  border:1px solid #252a2f;
+  border-radius:12px;
+  background:#0b0e11;
+}
+
+.admin-modbook-search-v133{
+  display:grid;
+  grid-template-columns:1fr 128px;
+  gap:7px;
+  padding:10px;
+  border-bottom:1px solid #20252a;
+  background:#0d1013;
+}
+.admin-modbook-search-v133 input,
+.admin-modbook-search-v133 select{
+  min-width:0;
+}
+
+.admin-modbook-list-head-v133{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:8px 10px;
+  border-bottom:1px solid #1e2327;
+}
+.admin-modbook-list-head-v133 span,
+.admin-modbook-list-head-v133 em{
+  color:#696f76;
+  font-size:8px;
+  font-style:normal;
+  font-weight:900;
+}
+
+.admin-modbook-scroll-v133{
+  max-height:610px;
+  overflow:auto;
+}
+
+.admin-modbook-row-v133{
+  display:grid;
+  gap:5px;
+  width:100%;
+  padding:10px 11px;
+  border:0;
+  border-bottom:1px solid #1e2327;
+  background:transparent;
+  color:inherit;
+  text-align:left;
+  cursor:pointer;
+}
+.admin-modbook-row-v133:hover,
+.admin-modbook-row-v133.active{
+  background:rgba(198,148,66,.035);
+}
+.admin-modbook-row-v133.active{
+  box-shadow:inset 2px 0 #c99a49;
+}
+.admin-modbook-row-v133>div:first-child{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  min-width:0;
+}
+.admin-modbook-row-v133>div:first-child strong{
+  min-width:0;
+  overflow:hidden;
+  color:#d9dcdf;
+  font-size:10px;
+  font-weight:950;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.admin-modbook-row-v133>small{
+  color:#70777e;
+  font-size:8px;
+}
+.admin-modbook-row-meta-v133{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+.admin-modbook-row-meta-v133>span{
+  color:#626970;
+  font-size:7.5px;
+}
+.admin-modbook-row-meta-v133>em{
+  color:#d0a65e;
+  font-size:7.5px;
+  font-style:normal;
+  font-weight:900;
+}
+.admin-modbook-row-meta-v133>em.is-free{
+  color:#66736b;
+}
+
+.admin-modbook-editor-v133{
+  position:sticky;
+  top:86px;
+}
+
+.admin-modbook-editor-head-v133{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:11px 12px;
+  border-bottom:1px solid #20252a;
+  background:#0d1013;
+}
+
+.admin-modbook-usage-v133{
+  min-width:70px;
+  padding:6px 8px;
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:8px;
+  text-align:right;
+}
+.admin-modbook-usage-v133>span{
+  display:block;
+  color:#636a71;
+  font-size:6.8px;
+}
+.admin-modbook-usage-v133>strong{
+  display:block;
+  margin-top:1px;
+  color:#8b9299;
+  font-size:13px;
+}
+.admin-modbook-usage-v133.is-used{
+  border-color:rgba(221,151,72,.18);
+  background:rgba(221,151,72,.025);
+}
+.admin-modbook-usage-v133.is-used>strong{
+  color:#d2a160;
+}
+
+.admin-modbook-form-v133{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:9px;
+  padding:12px;
+}
+.admin-modbook-form-v133>label{
+  display:grid;
+  gap:5px;
+}
+.admin-modbook-form-v133>label.full{
+  grid-column:1/-1;
+}
+.admin-modbook-form-v133>label>span{
+  color:#7f868d;
+  font-size:8px;
+  font-weight:900;
+}
+.admin-modbook-form-v133 textarea{
+  min-height:72px;
+}
+
+.admin-modbook-editor-actions-v133{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  padding:10px 12px 12px;
+  border-top:1px solid #1e2327;
+}
+.admin-modbook-editor-actions-v133>div{
+  display:flex;
+  gap:7px;
+  margin-left:auto;
+}
+
+.admin-modbook-delete-v133{
+  border-color:rgba(215,85,85,.25)!important;
+  background:rgba(215,85,85,.035)!important;
+  color:#d97878!important;
+}
+.admin-modbook-delete-v133:hover{
+  border-color:rgba(225,93,93,.48)!important;
+  background:rgba(225,93,93,.075)!important;
+}
+.admin-modbook-delete-v133:disabled{
+  opacity:.55;
+}
+
+.admin-modbook-delete-guide-v133{
+  display:flex;
+  align-items:flex-start;
+  gap:9px;
+  margin:0 12px 12px;
+  padding:9px 10px;
+  border:1px solid rgba(221,151,72,.13);
+  border-radius:8px;
+  background:rgba(221,151,72,.02);
+}
+.admin-modbook-delete-guide-v133>span{
+  flex:0 0 auto;
+  color:#af7d43;
+  font-size:7.5px;
+  font-weight:1000;
+}
+.admin-modbook-delete-guide-v133>p{
+  margin:0;
+  color:#767d84;
+  font-size:8.2px;
+  line-height:1.55;
+  word-break:keep-all;
+}
+
+@media(max-width:920px){
+  .admin-modbook-layout-v133{
+    grid-template-columns:1fr;
+  }
+  .admin-modbook-editor-v133{
+    position:static;
+  }
+  .admin-modbook-scroll-v133{
+    max-height:360px;
+  }
+}
+
+@media(max-width:620px){
+  .admin-modbook-toolbar-v133{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+  .admin-modbook-search-v133,
+  .admin-modbook-form-v133{
+    grid-template-columns:1fr;
+  }
+  .admin-modbook-form-v133>label.full{
+    grid-column:auto;
+  }
+  .admin-modbook-editor-actions-v133{
+    align-items:stretch;
+    flex-direction:column-reverse;
+  }
+  .admin-modbook-editor-actions-v133>div{
+    width:100%;
+    margin-left:0;
+  }
+  .admin-modbook-editor-actions-v133>div>.btn,
+  .admin-modbook-delete-v133{
+    flex:1;
+    width:100%;
+  }
+}
