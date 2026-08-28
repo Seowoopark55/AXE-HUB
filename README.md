@@ -1,4 +1,4 @@
-# AXE BUILD v1.1.30 · AXE HUB
+# AXE BUILD v1.1.31 · AXE HUB
 
 외부 공개용 추천세팅 / 개조서 / 제보 서비스입니다.
 
@@ -446,3 +446,26 @@ V1.1.29 무기 슬롯 추가 후 일부 브라우저에서 검은 화면이 뜨�
 
 신규 SQL 없음.
 단, V1.1.29의 `SUPABASE-MIGRATION-V1.1.29.sql`은 무기 슬롯 저장 기능을 위해 기존대로 적용되어 있어야 합니다.
+
+
+## V1.1.31
+
+무기 슬롯 저장 시 발생한 Supabase CHECK constraint 오류를 수정합니다.
+
+증상:
+`new row for relation "build_slots" violates check constraint "build_slots_slot_key_check"`
+
+원인:
+- 기존 `build_slots.slot_key` CHECK constraint가
+  `outer / top / bottom / shoes` 네 슬롯만 허용하고 있었습니다.
+- V1.1.29에서 `weapon` 슬롯을 추가했지만 기존 CHECK constraint 확장이 누락됐습니다.
+
+수정:
+- 기존 `build_slots_slot_key_check`를 제거
+- `outer / top / bottom / shoes / weapon`을 허용하도록 다시 생성
+
+### 필수
+`SUPABASE-MIGRATION-V1.1.31.sql`을 Supabase SQL Editor에서 1회 실행하세요.
+
+V1.1.31 프론트는 V1.1.30과 동일하며 신규 기능 변경은 없습니다.
+V1.1.29의 `weapon_family` 컬럼 migration은 기존대로 적용되어 있어야 합니다.

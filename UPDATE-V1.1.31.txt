@@ -1,0 +1,25 @@
+AXE HUB · AXE BUILD V1.1.31
+=================================
+
+[오류]
+new row for relation "build_slots"
+violates check constraint "build_slots_slot_key_check"
+
+[원인]
+기존 DB가 slot_key를
+outer / top / bottom / shoes
+4개만 허용하고 있었음.
+
+무기 슬롯 추가 후 slot_key='weapon' 저장 시 DB가 차단.
+
+[수정]
+허용 슬롯:
+outer / top / bottom / shoes / weapon
+
+[필수]
+SUPABASE-MIGRATION-V1.1.31.sql
+Supabase SQL Editor에서 1회 실행.
+
+[프론트]
+V1.1.30의 검은화면 호환 패치 그대로 포함.
+추가 UI 변경 없음.
