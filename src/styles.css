@@ -5271,3 +5271,119 @@ select:focus,input:focus,textarea:focus{border-color:rgba(247,183,51,.65);box-sh
     border-radius:13px;
   }
 }
+
+
+/* =========================================================
+   AXE BUILD v1.1.26
+   MODIFIER PICKER SEARCH FIX
+   ========================================================= */
+
+.modifier-search-v126{
+  position:relative;
+  display:flex;
+  align-items:center;
+}
+.modifier-search-v126>input{
+  width:100%;
+  padding-right:34px!important;
+}
+.modifier-search-v126>button{
+  position:absolute;
+  right:7px;
+  top:50%;
+  transform:translateY(-50%);
+  display:grid;
+  place-items:center;
+  width:23px;
+  height:23px;
+  padding:0;
+  border:0;
+  border-radius:6px;
+  background:transparent;
+  color:#737a82;
+  font-size:16px;
+  line-height:1;
+  cursor:pointer;
+}
+.modifier-search-v126>button:hover{
+  background:rgba(255,255,255,.045);
+  color:#d7dadd;
+}
+
+.modifier-search-status-v126{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin:-2px 0 8px;
+  padding:0 1px;
+}
+.modifier-search-status-v126>span{
+  color:#9ca3aa;
+  font-size:8.5px;
+  font-weight:900;
+}
+.modifier-search-status-v126>small{
+  color:#5f666e;
+  font-size:8px;
+  line-height:1.4;
+}
+
+.modifier-no-result-v126{
+  display:grid;
+  gap:3px;
+  margin-top:7px;
+  padding:9px 10px;
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:8px;
+  background:rgba(255,255,255,.018);
+}
+.modifier-no-result-v126>strong{
+  color:#9299a1;
+  font-size:9px;
+}
+.modifier-no-result-v126>span{
+  color:#5e656c;
+  font-size:8px;
+  line-height:1.5;
+}
+
+@media(max-width:680px){
+  .modifier-search-status-v126{
+    align-items:flex-start;
+    flex-direction:column;
+    gap:2px;
+  }
+}
+
+
+/* =========================================================
+   AXE BUILD v1.1.27
+   REPORT QUICK SELECT
+   ========================================================= */
+
+.report-custom-input-v127{
+  margin-top:7px;
+}
+
+.report-option-helper-v127{
+  display:grid!important;
+  gap:6px!important;
+}
+
+.report-option-helper-v127>small{
+  color:#666d75;
+  font-size:8.5px;
+  line-height:1.55;
+  word-break:keep-all;
+}
+
+.report-option-helper-v127>select{
+  min-height:39px;
+}
+
+@media(max-width:680px){
+  .report-option-helper-v127>small{
+    font-size:8.3px;
+  }
+}

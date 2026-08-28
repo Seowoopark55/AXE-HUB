@@ -178,6 +178,29 @@ function modifierDropdownLabel(mod) {
   return `[${category}] ${name}${options ? ` — ${options}` : ""}`;
 }
 
+function normalizeModifierSearch(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFKC")
+    .replace(/\s+/g, "")
+    .replace(/[()[\]{}<>·•,.:;/'"\-_+~!@#$%^&*=|\\?]/g, "");
+}
+
+function modifierSearchText(mod) {
+  return normalizeModifierSearch([
+    mod?.name,
+    cleanPresetModbookName(mod?.name || ""),
+    mod?.category,
+    mod?.parts,
+    mod?.success_rate,
+    mod?.option1,
+    mod?.option2,
+    mod?.option3,
+    mod?.note,
+    modifierDropdownLabel(mod)
+  ].filter(Boolean).join(" "));
+}
+
 function detectBuildTagSuggestions(slots, modMap) {
   const selectedMods = Object.values(slots || {})
     .flatMap((slot) => [slot?.prefix_modbook_id, slot?.suffix_modbook_id])
@@ -1925,11 +1948,15 @@ function ModifierPicker({ type, slotMeta, modbooks, value, onChange }) {
     () => [...new Set(candidates.map((m) => m.category).filter(Boolean))].sort(),
     [candidates]
   );
-  const filtered = useMemo(() => candidates.filter((m) => {
-    if (category !== "전체 분류" && m.category !== category) return false;
-    const hay = [m.name, m.category, m.parts, ...optionLines(m)].join(" ").toLowerCase();
-    return hay.includes(query.trim().toLowerCase());
-  }), [candidates, category, query]);
+  const filtered = useMemo(() => {
+    const needle = normalizeModifierSearch(query);
+
+    return candidates.filter((m) => {
+      if (category !== "전체 분류" && m.category !== category) return false;
+      if (!needle) return true;
+      return modifierSearchText(m).includes(needle);
+    });
+  }, [candidates, category, query]);
 
   const selectedMod = candidates.find((m) => String(m.id) === String(value)) || null;
 
@@ -1950,8 +1977,34 @@ function ModifierPicker({ type, slotMeta, modbooks, value, onChange }) {
         </label>
         <label>
           <span>검색</span>
-          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="개조서명 / 옵션 검색" />
+          <div className="modifier-search-v126">
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="개조서명 / 옵션 검색"
+              autoComplete="off"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                aria-label="검색어 지우기"
+                title="검색어 지우기"
+              >
+                ×
+              </button>
+            )}
+          </div>
         </label>
+      </div>
+
+      <div className="modifier-search-status-v126">
+        <span>
+          {query
+            ? `검색 결과 ${filtered.length}개`
+            : `선택 가능 ${filtered.length}개`}
+        </span>
+        {query && <small>띄어쓰기와 기호를 무시하고 검색합니다.</small>}
       </div>
 
       <label className="modifier-select">
@@ -1963,6 +2016,13 @@ function ModifierPicker({ type, slotMeta, modbooks, value, onChange }) {
           ))}
         </select>
       </label>
+
+      {query && filtered.length === 0 && (
+        <div className="modifier-no-result-v126">
+          <strong>검색 결과가 없습니다.</strong>
+          <span>다른 개조서명이나 옵션 단어로 검색해보세요.</span>
+        </div>
+      )}
 
       {selectedMod && (
         <div className="picker-selected-options">
@@ -2411,9 +2471,74 @@ function ReportEditor({ user, modbooks, onClose, onSaved }) {
   const [file, setFile] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [categoryMode, setCategoryMode] = useState("select");
+  const [partsMode, setPartsMode] = useState("select");
+
+  const reportCategoryOptions = useMemo(() => {
+    const values = modbooks
+      .map((m) => String(m?.category || "").trim())
+      .filter(Boolean);
+    return [...new Set(values)].sort((a, b) => a.localeCompare(b, "ko"));
+  }, [modbooks]);
+
+  const reportPartsOptions = useMemo(() => {
+    const values = modbooks
+      .map((m) => String(m?.parts || "").trim())
+      .filter(Boolean);
+    return [...new Set(values)].sort((a, b) => a.localeCompare(b, "ko"));
+  }, [modbooks]);
+
+  const reportOptionTemplates = useMemo(() => {
+    const selectedCategory = String(form.category || "").trim();
+
+    const source = selectedCategory
+      ? modbooks.filter((m) => String(m?.category || "").trim() === selectedCategory)
+      : modbooks;
+
+    const values = source
+      .flatMap((m) => optionLines(m))
+      .map((value) => String(value || "").trim())
+      .filter(Boolean);
+
+    return [...new Set(values)].sort((a, b) => a.localeCompare(b, "ko"));
+  }, [modbooks, form.category]);
 
   function set(k, v) {
     setForm((prev) => ({ ...prev, [k]: v }));
+  }
+
+  function chooseCategory(value) {
+    if (value === "__custom__") {
+      setCategoryMode("custom");
+      set("category", "");
+      return;
+    }
+    setCategoryMode("select");
+    set("category", value);
+  }
+
+  function chooseParts(value) {
+    if (value === "__custom__") {
+      setPartsMode("custom");
+      set("parts", "");
+      return;
+    }
+    setPartsMode("select");
+    set("parts", value);
+  }
+
+  function addReportOptionTemplate(value) {
+    const next = String(value || "").trim();
+    if (!next) return;
+
+    const current = String(form.options_text || "")
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    if (current.includes(next)) return;
+
+    set("options_text", [...current, next].join("\n"));
   }
 
   function chooseEvidenceFile(nextFile, input) {
@@ -2430,6 +2555,12 @@ function ReportEditor({ user, modbooks, onClose, onSaved }) {
 
   function chooseTarget(value) {
     const mod = modbooks.find((m) => String(m.id) === String(value));
+
+    if (mod) {
+      setCategoryMode(reportCategoryOptions.includes(String(mod.category || "").trim()) ? "select" : "custom");
+      setPartsMode(reportPartsOptions.includes(String(mod.parts || "").trim()) ? "select" : "custom");
+    }
+
     setForm((prev) => ({
       ...prev,
       target_modbook_id: value,
@@ -2527,15 +2658,79 @@ function ReportEditor({ user, modbooks, onClose, onSaved }) {
         </label>
         <label>
           <span>분류</span>
-          <input value={form.category} onChange={(e) => set("category", e.target.value)} placeholder="이동속도, 채광 등" />
+          <select
+            value={categoryMode === "custom" ? "__custom__" : form.category}
+            onChange={(e) => chooseCategory(e.target.value)}
+          >
+            <option value="">분류 선택</option>
+            {reportCategoryOptions.map((value) => (
+              <option key={value} value={value}>{value}</option>
+            ))}
+            <option value="__custom__">직접 입력</option>
+          </select>
+          {categoryMode === "custom" && (
+            <input
+              className="report-custom-input-v127"
+              value={form.category}
+              onChange={(e) => set("category", e.target.value)}
+              placeholder="새 분류 직접 입력"
+              autoFocus
+            />
+          )}
         </label>
+
         <label>
           <span>적용 부위</span>
-          <input value={form.parts} onChange={(e) => set("parts", e.target.value)} />
+          <select
+            value={partsMode === "custom" ? "__custom__" : form.parts}
+            onChange={(e) => chooseParts(e.target.value)}
+          >
+            <option value="">적용 부위 선택</option>
+            {reportPartsOptions.map((value) => (
+              <option key={value} value={value}>{value}</option>
+            ))}
+            <option value="__custom__">직접 입력</option>
+          </select>
+          {partsMode === "custom" && (
+            <input
+              className="report-custom-input-v127"
+              value={form.parts}
+              onChange={(e) => set("parts", e.target.value)}
+              placeholder="새 적용 부위 직접 입력"
+            />
+          )}
         </label>
+
+        <label className="full report-option-helper-v127">
+          <span>옵션 빠른 선택</span>
+          <select
+            value=""
+            onChange={(e) => {
+              addReportOptionTemplate(e.target.value);
+              e.target.value = "";
+            }}
+          >
+            <option value="">
+              {form.category
+                ? `${form.category} 관련 옵션을 선택해 추가`
+                : "기존 옵션을 선택해 추가"}
+            </option>
+            {reportOptionTemplates.map((value) => (
+              <option key={value} value={value}>{value}</option>
+            ))}
+          </select>
+          <small>
+            선택한 옵션은 아래 입력란에 자동으로 추가됩니다. 실제 수치나 문구가 다르면 직접 수정할 수 있습니다.
+          </small>
+        </label>
+
         <label className="full">
           <span>옵션 · 한 줄에 하나</span>
-          <textarea value={form.options_text} onChange={(e) => set("options_text", e.target.value)} />
+          <textarea
+            value={form.options_text}
+            onChange={(e) => set("options_text", e.target.value)}
+            placeholder="드롭다운에서 선택하거나 직접 입력하세요."
+          />
         </label>
         <label className="full">
           <span>메모</span>
