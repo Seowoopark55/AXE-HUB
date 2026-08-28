@@ -630,27 +630,30 @@ function Hero({ onJump, user, onCreate, onProfile, onLogin }) {
           장비 슬롯과 개조서 옵션을 한눈에 비교하고, 이용자들이 직접 공유한 다양한 세팅을 확인해보세요.
           추천세팅과 개조서는 로그인 없이 볼 수 있고, 로그인하면 세팅 공유·프리셋 저장·추천·댓글을 사용할 수 있습니다.
         </p>
-        <div className={`hero-actions hero-actions-v119 ${user ? "hero-actions-v122-user" : ""}`}>
-          <button className="btn primary" onClick={onJump}>추천세팅 바로 보기</button>
+        <div className="hero-actions hero-actions-v119 hero-actions-v124">
+          <button className="btn primary hero-primary-v124" onClick={onJump}>
+            <span>추천세팅 바로 보기</span>
+            <span className="hero-primary-arrow-v124" aria-hidden="true">→</span>
+          </button>
+
+          <button
+            className="btn hero-share-btn-v122"
+            onClick={onCreate}
+            title={user ? "내 세팅을 직접 등록하고 공유" : "로그인 후 내 세팅을 직접 등록하고 공유"}
+          >
+            <span className="hero-share-icon-v122" aria-hidden="true">+</span>
+            <span>세팅 공유하기</span>
+          </button>
+
           {user ? (
-            <>
-              <button
-                className="btn hero-share-btn-v122"
-                onClick={onCreate}
-                title="내 세팅을 직접 등록하고 공유"
-              >
-                <span className="hero-share-icon-v122" aria-hidden="true">+</span>
-                <span>세팅 공유하기</span>
-              </button>
-              <button
-                className="btn hero-profile-btn-v119"
-                onClick={onProfile}
-                title="닉네임·회사명 등 프로필 설정"
-              >
-                <SettingsIcon />
-                <span>프로필 설정</span>
-              </button>
-            </>
+            <button
+              className="btn hero-profile-btn-v119"
+              onClick={onProfile}
+              title="닉네임·회사명 등 프로필 설정"
+            >
+              <SettingsIcon />
+              <span>프로필 설정</span>
+            </button>
           ) : (
             <button className="btn hero-login-btn-v119" onClick={onLogin}>Discord 로그인</button>
           )}
@@ -1117,6 +1120,31 @@ function RecruitPosterModal({ onClose }) {
           src="/assets/axe-recruitment-poster.png"
           alt="AXE 신규 인원 모집 포스터"
         />
+      </div>
+    </Modal>
+  );
+}
+
+function ShareLoginRequiredModal({ onClose, onLogin }) {
+  return (
+    <Modal title="세팅 공유 안내" onClose={onClose} className="share-login-modal-v124">
+      <div className="share-login-v124">
+        <div className="share-login-v124__mark" aria-hidden="true">
+          <span>+</span>
+        </div>
+        <div className="share-login-v124__copy">
+          <span>SHARE YOUR BUILD</span>
+          <strong>로그인 후 직접 세팅을 등록하고 공유할 수 있습니다.</strong>
+          <p>
+            세팅 등록은 작성자 구분과 도배 방지를 위해 Discord 로그인이 필요합니다.
+            추천세팅과 개조서 열람은 로그인 없이 계속 이용할 수 있습니다.
+          </p>
+        </div>
+      </div>
+
+      <div className="modal-actions">
+        <button className="btn ghost" onClick={onClose}>나중에</button>
+        <button className="btn discord" onClick={onLogin}>Discord 로그인</button>
       </div>
     </Modal>
   );
@@ -2565,6 +2593,7 @@ export default function App() {
   const [profileModal, setProfileModal] = useState(false);
   const [recruitModal, setRecruitModal] = useState(false);
   const [loginPrivacyModal, setLoginPrivacyModal] = useState(false);
+  const [shareLoginModal, setShareLoginModal] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState(() => categoryFromLocation());
   const [adminMode, setAdminMode] = useState("nicknames");
   const [toast, setToast] = useState({ message: "", tone: "default" });
@@ -3006,7 +3035,13 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`}</pre>
           <Hero
             onJump={jumpToBuilds}
             user={user}
-            onCreate={() => setEditor({ build: null, slots: [], mode: "create" })}
+            onCreate={() => {
+              if (user) {
+                setEditor({ build: null, slots: [], mode: "create" });
+              } else {
+                setShareLoginModal(true);
+              }
+            }}
             onProfile={() => setProfileModal(true)}
             onLogin={login}
           />
@@ -3111,6 +3146,16 @@ VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...`}</pre>
           modbooks={modbooks}
           onClose={() => setReportEditor(false)}
           onSaved={reportFinished}
+        />
+      )}
+
+      {shareLoginModal && !user && (
+        <ShareLoginRequiredModal
+          onClose={() => setShareLoginModal(false)}
+          onLogin={() => {
+            setShareLoginModal(false);
+            login();
+          }}
         />
       )}
 

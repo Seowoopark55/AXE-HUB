@@ -5091,3 +5091,183 @@ select:focus,input:focus,textarea:focus{border-color:rgba(247,183,51,.65);box-sh
     grid-column:auto;
   }
 }
+
+
+/* =========================================================
+   AXE BUILD v1.1.23
+   HERO KOREAN WORD WRAP
+   ========================================================= */
+
+/* 한글 단어가 '로 / 그인'처럼 글자 중간에서 끊기지 않도록 처리 */
+.hero-simple .hero-copy>p{
+  word-break:keep-all;
+  overflow-wrap:break-word;
+}
+
+
+/* =========================================================
+   AXE BUILD v1.1.24
+   ALWAYS-VISIBLE SHARE CTA + PREMIUM PRIMARY CTA
+   ========================================================= */
+
+/* 세 버튼은 로그인 여부와 관계없이 동일한 흐름으로 노출 */
+.hero-actions-v124{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:9px;
+}
+
+/* 메인 CTA: 단순 단색 골드보다 깊이감 있는 AXE 골드 */
+.hero-primary-v124{
+  position:relative;
+  overflow:hidden;
+  min-width:181px;
+  border-color:rgba(255,211,111,.88)!important;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.16),transparent 46%),
+    linear-gradient(135deg,#ffd76f 0%,#f7b733 48%,#d98c13 100%)!important;
+  color:#171108!important;
+  box-shadow:
+    0 10px 28px rgba(247,183,51,.18),
+    0 2px 7px rgba(0,0,0,.28),
+    inset 0 1px rgba(255,255,255,.55),
+    inset 0 -1px rgba(110,63,0,.16)!important;
+  text-shadow:0 1px rgba(255,255,255,.18);
+}
+.hero-primary-v124::before{
+  content:"";
+  position:absolute;
+  top:-70%;
+  left:-26%;
+  width:38%;
+  height:240%;
+  transform:rotate(20deg);
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.20),transparent);
+  opacity:.42;
+  pointer-events:none;
+  transition:transform .35s ease,left .35s ease;
+}
+.hero-primary-v124:hover{
+  transform:translateY(-2px);
+  border-color:#ffe29a!important;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.20),transparent 46%),
+    linear-gradient(135deg,#ffe08a 0%,#ffc34a 48%,#e49a1c 100%)!important;
+  box-shadow:
+    0 14px 34px rgba(247,183,51,.24),
+    0 4px 10px rgba(0,0,0,.30),
+    inset 0 1px rgba(255,255,255,.62)!important;
+}
+.hero-primary-v124:hover::before{
+  left:86%;
+}
+.hero-primary-arrow-v124{
+  display:inline-grid;
+  place-items:center;
+  width:21px;
+  height:21px;
+  margin-left:2px;
+  border:1px solid rgba(54,35,4,.28);
+  border-radius:50%;
+  background:rgba(255,255,255,.15);
+  font-size:13px;
+  font-weight:1000;
+  line-height:1;
+  transition:transform .16s ease,background .16s ease;
+}
+.hero-primary-v124:hover .hero-primary-arrow-v124{
+  transform:translateX(2px);
+  background:rgba(255,255,255,.23);
+}
+
+/* 비로그인 세팅 공유 안내 */
+.share-login-modal-v124{
+  width:min(560px,calc(100vw - 30px))!important;
+}
+.share-login-v124{
+  display:grid;
+  grid-template-columns:58px 1fr;
+  gap:15px;
+  align-items:start;
+  padding:20px 20px 8px;
+}
+.share-login-v124__mark{
+  display:grid;
+  place-items:center;
+  width:54px;
+  height:54px;
+  border:1px solid rgba(247,183,51,.28);
+  border-radius:15px;
+  background:
+    radial-gradient(circle at 35% 25%,rgba(255,215,111,.16),transparent 55%),
+    rgba(247,183,51,.045);
+  box-shadow:inset 0 1px rgba(255,255,255,.04);
+}
+.share-login-v124__mark>span{
+  color:#e5b95f;
+  font-size:30px;
+  font-weight:300;
+  line-height:1;
+}
+.share-login-v124__copy>span{
+  display:block;
+  color:#b78d47;
+  font-size:8px;
+  font-weight:1000;
+  letter-spacing:.14em;
+}
+.share-login-v124__copy>strong{
+  display:block;
+  margin-top:5px;
+  color:#f0f0f2;
+  font-size:15px;
+  font-weight:950;
+  line-height:1.5;
+  word-break:keep-all;
+}
+.share-login-v124__copy>p{
+  margin:8px 0 0;
+  color:#8d939a;
+  font-size:10px;
+  line-height:1.75;
+  word-break:keep-all;
+}
+
+/* 기존 v1.1.22 모바일 규칙이 로그인 사용자에만 적용됐으므로
+   v1.1.24에서는 로그인 전/후 모두 세 버튼 배치 지원 */
+@media(max-width:760px){
+  .hero-actions-v124{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    gap:8px;
+  }
+  .hero-actions-v124>.hero-primary-v124{
+    grid-column:1/-1;
+    width:100%;
+  }
+  .hero-actions-v124>.btn:not(.hero-primary-v124){
+    min-width:0;
+    width:100%;
+    padding-left:10px;
+    padding-right:10px;
+    white-space:nowrap;
+  }
+}
+
+@media(max-width:470px){
+  .hero-actions-v124{
+    grid-template-columns:1fr;
+  }
+  .hero-actions-v124>.hero-primary-v124{
+    grid-column:auto;
+  }
+  .share-login-v124{
+    grid-template-columns:1fr;
+  }
+  .share-login-v124__mark{
+    width:46px;
+    height:46px;
+    border-radius:13px;
+  }
+}
